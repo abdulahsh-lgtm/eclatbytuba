@@ -235,7 +235,8 @@ model Payment {
   currency        String        @default("PKR")
   method          String
   status          PaymentStatus @default(PENDING)
-  transactionId   String?
+  /** Stripe PaymentIntent / charge id; unique when set */
+  transactionId   String?        @unique
   providerData    Json?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
@@ -278,4 +279,17 @@ model Setting {
   updatedAt DateTime @updatedAt
 
   @@map("settings")
+}
+
+/// Stripe webhook event ledger for idempotent processing (Phase 2).
+model StripeWebhookEvent {
+  id          String   @id @default(cuid())
+  eventId     String   @unique
+  type        String
+  processedAt DateTime @default(now())
+  orderId     String?
+  payloadMeta Json?
+
+  @@index([type])
+  @@map("stripe_webhook_events")
 }
