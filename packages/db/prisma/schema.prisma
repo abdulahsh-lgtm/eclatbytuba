@@ -1,6 +1,4 @@
-// Eclat By Tuba - Prisma Schema
-// Source of truth for the independent e-commerce platform.
-
+// Eclat by Tuba - Database Schema
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,7 +8,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum UserRole {
+enum Role {
   CUSTOMER
   ADMIN
   SUPER_ADMIN
@@ -38,16 +36,38 @@ model User {
   email         String    @unique
   name          String?
   passwordHash  String?
-  role          UserRole  @default(CUSTOMER)
+  role          Role      @default(CUSTOMER)
   phone         String?
+  avatarUrl     String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
+  addresses     Address[]
   orders        Order[]
-  reviews       Review[]
   cart          Cart?
+  reviews       Review[]
 
   @@map("users")
+}
+
+model Address {
+  id          String   @id @default(cuid())
+  userId      String
+  label       String?
+  fullName    String
+  phone       String
+  line1       String
+  line2       String?
+  city        String
+  state       String?
+  postalCode  String
+  country     String   @default("PK")
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("addresses")
 }
 
 model Category {
@@ -66,7 +86,6 @@ model Category {
   children    Category[] @relation("CategoryTree")
   products    Product[]
 
-  @@index([parentId])
   @@map("categories")
 }
 
@@ -75,16 +94,17 @@ model Product {
   name            String
   slug            String         @unique
   description     String?
+  fullDescription String?        @db.Text
   price           Decimal        @db.Decimal(10, 2)
   compareAtPrice  Decimal?       @db.Decimal(10, 2)
   sku             String?        @unique
   barcode         String?
   inventory       Int            @default(0)
   trackInventory  Boolean        @default(true)
-  images          String[]
-  categoryId      String?
   isActive        Boolean        @default(true)
   isFeatured      Boolean        @default(false)
+  categoryId      String?
+  images          String[]
   tags            String[]
   metadata        Json?
   createdAt       DateTime       @default(now())
@@ -93,8 +113,8 @@ model Product {
   category        Category?      @relation(fields: [categoryId], references: [id])
   variants        ProductVariant[]
   orderItems      OrderItem[]
-  reviews         Review[]
   cartItems       CartItem[]
+  reviews         Review[]
 
   @@index([categoryId])
   @@index([isActive, isFeatured])
@@ -226,6 +246,7 @@ model Payment {
   @@map("payments")
 }
 
+// Verified reviews only - orderId required (no guest fake reviews)
 model Review {
   id          String   @id @default(cuid())
   productId   String
