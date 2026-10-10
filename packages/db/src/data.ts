@@ -40,6 +40,12 @@ function ensureMemSeed() {
 
 function useDb(): boolean {
   const url = process.env.DATABASE_URL?.trim();
+  // Next.js sets NEXT_PHASE during `next build` static generation.
+  // Allow catalog seed without DATABASE_URL so the build can prerender pages.
+  // Runtime production still requires a real DATABASE_URL (fail closed).
+  if (process.env.NEXT_PHASE === "phase-production-build" && !url) {
+    return false;
+  }
   if (process.env.NODE_ENV === "production") {
     if (!url) throw new Error("DATABASE_URL is required in production.");
     if (url.includes("localhost") || url.includes("127.0.0.1"))
@@ -553,12 +559,8 @@ export async function updateOrderStatus(id: string, status: string, opts?: { not
 }
 
 export async function getProductReviews(productId: string) {
-  if (useDb()) {
-    const { prisma } = await import("./index");
-    return prisma.review.findMany({ where: { productId, isApproved: true }, orderBy: [{ imageUrl: "desc" }, { createdAt: "desc" }] });
-  }
-  ensureMemSeed();
-  return mem.reviews.filter((r) => r.productId === productId && r.isApproved);
+  const reviews = await getAllReviews({ approvedOnly: true });
+  return reviews.filter((r: any) => r.productId === productId);
 }
 
 export async function getReviewStats(productId: string) {
