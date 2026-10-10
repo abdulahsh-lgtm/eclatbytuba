@@ -175,6 +175,8 @@ model CartItem {
 model Order {
   id              String        @id @default(cuid())
   orderNumber     String        @unique
+  /** Client-supplied key for safe checkout retries; unique when present */
+  idempotencyKey  String?       @unique
   userId          String?
   email           String
   phone           String?
