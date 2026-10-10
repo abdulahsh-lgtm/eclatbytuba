@@ -174,6 +174,12 @@ export default function CheckoutPage() {
     setError("");
 
     try {
+      // Server is authoritative for price, shipping, and totals.
+      const idempotencyKey =
+        typeof crypto !== "undefined" && crypto.randomUUID
+          ? crypto.randomUUID().replace(/-/g, "")
+          : `ck_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -182,7 +188,7 @@ export default function CheckoutPage() {
           phone: form.phone,
           paymentMethod,
           shippingMethod,
-          shippingCost,
+          idempotencyKey,
           shippingAddress: {
             fullName: form.fullName,
             line1: form.address,
@@ -193,10 +199,8 @@ export default function CheckoutPage() {
           },
           items: items.map((i) => ({
             productId: i.productId,
-            name: i.name,
-            price: i.price,
             quantity: i.quantity,
-            imageUrl: i.imageUrl,
+            variantId: (i as any).variantId,
           })),
         }),
       });
