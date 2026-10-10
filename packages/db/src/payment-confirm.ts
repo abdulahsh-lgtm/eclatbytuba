@@ -1,5 +1,5 @@
 /**
- * Phase 2 — DB-backed payment confirmation (transactional).
+ * Phase 2 - DB-backed payment confirmation (transactional).
  * In-memory fallbacks live in data.ts for tests.
  */
 import { canMarkOrderPaid, canMarkPaymentFailed } from "./payment-state";
@@ -16,30 +16,32 @@ export async function confirmOrderPaidDb(input: {
 > {
   const { prisma } = await import("./index");
 
-  if (input.stripeEventId) {
-    try {
-      await prisma.stripeWebhookEvent.create({
-        data: {
-          eventId: input.stripeEventId,
-          type: "payment_intent.succeeded",
-          orderId: input.orderId,
-          payloadMeta: {
-            paymentIntentId: input.paymentIntentId,
-            amountMinor: input.amountMinor,
-            currency: input.currency,
-          },
-        },
-      });
-    } catch (err: any) {
-      if (err?.code === "P2002") {
-        return { ok: true, alreadyPaid: true };
-      }
-      console.warn("StripeWebhookEvent insert skipped:", err?.code || err);
-    }
-  }
-
   try {
     return await prisma.$transaction(async (tx: any) => {
+      // Record event inside the same transaction so a failed confirm can roll back
+      // and Stripe retries are not short-circuited as already paid.
+      if (input.stripeEventId) {
+        try {
+          await tx.stripeWebhookEvent.create({
+            data: {
+              eventId: input.stripeEventId,
+              type: "payment_intent.succeeded",
+              orderId: input.orderId,
+              payloadMeta: {
+                paymentIntentId: input.paymentIntentId,
+                amountMinor: input.amountMinor,
+                currency: input.currency,
+              },
+            },
+          });
+        } catch (err: any) {
+          if (err?.code === "P2002") {
+            return { ok: true as const, alreadyPaid: true };
+          }
+          throw err;
+        }
+      }
+
       const order = await tx.order.findUnique({
         where: { id: input.orderId },
         include: { payments: true },
@@ -117,44 +119,53 @@ export async function markPaymentFailedDb(input: {
 }): Promise<{ ok: true; skipped?: boolean } | { ok: false; reason: string }> {
   const { prisma } = await import("./index");
 
-  if (input.stripeEventId) {
-    try {
-      await prisma.stripeWebhookEvent.create({
+  try {
+    return await prisma.$transaction(async (tx: any) => {
+      if (input.stripeEventId) {
+        try {
+          await tx.stripeWebhookEvent.create({
+            data: {
+              eventId: input.stripeEventId,
+              type: "payment_intent.payment_failed",
+              orderId: input.orderId,
+              payloadMeta: { paymentIntentId: input.paymentIntentId },
+            },
+          });
+        } catch (err: any) {
+          if (err?.code === "P2002") {
+            return { ok: true as const, skipped: true };
+          }
+          throw err;
+        }
+      }
+
+      const order = await tx.order.findUnique({
+        where: { id: input.orderId },
+        include: { payments: true },
+      });
+      if (!order) return { ok: false as const, reason: "order_not_found" };
+      if (String(order.paymentStatus) === "PAID") {
+        return { ok: false as const, reason: "already_paid" };
+      }
+      if (!canMarkPaymentFailed(String(order.paymentStatus))) {
+        return { ok: false as const, reason: "invalid_transition" };
+      }
+
+      await tx.payment.updateMany({
+        where: { orderId: input.orderId, status: "PENDING" },
         data: {
-          eventId: input.stripeEventId,
-          type: "payment_intent.payment_failed",
-          orderId: input.orderId,
-          payloadMeta: { paymentIntentId: input.paymentIntentId },
+          status: "FAILED",
+          transactionId: input.paymentIntentId,
         },
       });
-    } catch (err: any) {
-      if (err?.code === "P2002") {
-        return { ok: true, skipped: true };
-      }
-      console.warn("StripeWebhookEvent insert skipped:", err?.code || err);
+      return { ok: true as const };
+    });
+  } catch (err: any) {
+    if (err?.code === "P2002") {
+      return { ok: true, skipped: true };
     }
+    throw err;
   }
-
-  const order = await prisma.order.findUnique({
-    where: { id: input.orderId },
-    include: { payments: true },
-  });
-  if (!order) return { ok: false, reason: "order_not_found" };
-  if (String(order.paymentStatus) === "PAID") {
-    return { ok: false, reason: "already_paid" };
-  }
-  if (!canMarkPaymentFailed(String(order.paymentStatus))) {
-    return { ok: false, reason: "invalid_transition" };
-  }
-
-  await prisma.payment.updateMany({
-    where: { orderId: input.orderId, status: "PENDING" },
-    data: {
-      status: "FAILED",
-      transactionId: input.paymentIntentId,
-    },
-  });
-  return { ok: true };
 }
 
 export async function attachPaymentIntentDb(
