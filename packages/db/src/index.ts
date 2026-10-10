@@ -27,6 +27,10 @@ export {
   getOrderById,
   createOrder,
   updateOrderStatus,
+  confirmOrderPaid,
+  markPaymentFailed,
+  attachPaymentIntent,
+  getExistingPaymentIntentId,
   getDashboardStats,
   getProductReviews,
   getReviewStats,
@@ -46,6 +50,16 @@ export {
   normalizeIdempotencyKey,
   assertFinancialInvariants,
 } from "./checkout";
+
+export {
+  canTransitionPayment,
+  isOrderPayable,
+  canMarkOrderPaid,
+  canMarkPaymentFailed,
+  PAYMENT_TRANSITIONS,
+  ORDER_PAYABLE_STATUSES,
+} from "./payment-state";
+export type { PaymentStatusValue, OrderStatusValue } from "./payment-state";
 
 export {
   recordHit,

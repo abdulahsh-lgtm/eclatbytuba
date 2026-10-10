@@ -10,7 +10,8 @@
     "db:studio": "prisma studio",
     "db:seed": "tsx src/seed.ts",
     "lint": "echo 'lint db'",
-    "test:security": "ALLOW_IN_MEMORY=1 tsx src/checkout.security.test.ts"
+    "test:security": "ALLOW_IN_MEMORY=1 tsx src/checkout.security.test.ts && ALLOW_IN_MEMORY=1 tsx src/payment.phase2.test.ts",
+    "test:phase2": "ALLOW_IN_MEMORY=1 tsx src/payment.phase2.test.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.20.0",
