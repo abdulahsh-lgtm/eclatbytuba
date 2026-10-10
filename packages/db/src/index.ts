@@ -36,6 +36,18 @@ export {
 } from "./data";
 
 export {
+  CheckoutError,
+  validateEmail,
+  validateQuantity,
+  normalizeCheckoutItems,
+  computeLineTotal,
+  computeOrderTotals,
+  generateOrderNumber,
+  normalizeIdempotencyKey,
+  assertFinancialInvariants,
+} from "./checkout";
+
+export {
   recordHit,
   getHits,
   summarizeAnalytics,
