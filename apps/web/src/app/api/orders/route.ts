@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getOrders, createOrder } from "@eclat/db";
+import { getOrders, createOrder, CheckoutError } from "@eclat/db";
 import { rateLimit, RATE_LIMITS, clientKey } from "@eclat/config";
 import { sendOrderConfirmation } from "@eclat/emails";
 
@@ -7,8 +7,12 @@ export async function GET() {
   try {
     const orders = await getOrders();
     return NextResponse.json({ orders });
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+  } catch (e: unknown) {
+    console.error(e);
+    return NextResponse.json(
+      { error: "Unable to load orders" },
+      { status: 500 }
+    );
   }
 }
 
@@ -49,16 +53,20 @@ export async function POST(req: NextRequest) {
       phone: body.phone,
       shippingAddress: {
         ...(body.shippingAddress || {}),
-        shippingMethod: body.shippingMethod || "standard",
+        shippingMethod:
+          body.shippingMethod ||
+          body.shippingAddress?.shippingMethod ||
+          "standard",
       },
-      items: body.items,
+      items: (body.items as any[]).map((i) => ({
+        productId: i.productId,
+        quantity: i.quantity,
+        variantId: i.variantId,
+      })),
       paymentMethod: body.paymentMethod || "cod",
-      shippingCost:
-        body.shippingCost != null
-          ? Number(body.shippingCost)
-          : body.shippingMethod === "express"
-            ? 350
-            : 250,
+      shippingMethod:
+        body.shippingMethod || body.shippingAddress?.shippingMethod,
+      idempotencyKey: body.idempotencyKey || body.idempotency_key || null,
     });
 
     try {
@@ -73,8 +81,26 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ order }, { status: 201 });
-  } catch (e: any) {
+  } catch (e: unknown) {
+    if (e instanceof CheckoutError || (e as any)?.name === "CheckoutError") {
+      const code = (e as CheckoutError).code;
+      const status =
+        code === "NOT_FOUND"
+          ? 404
+          : code === "INSUFFICIENT_STOCK"
+            ? 409
+            : code === "CONFLICT"
+              ? 409
+              : 400;
+      return NextResponse.json(
+        { error: (e as Error).message, code },
+        { status }
+      );
+    }
     console.error(e);
-    return NextResponse.json({ error: e.message }, { status: 500 });
+    return NextResponse.json(
+      { error: "Unable to create order" },
+      { status: 500 }
+    );
   }
 }
