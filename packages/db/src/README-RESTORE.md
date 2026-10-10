@@ -1,0 +1,1 @@
+Full data.ts restore is in local commit e823cb7 and artifact packages-db-src-data.ts.RESTORED. Remote data.ts must be restored from that file (31KB with variants + createReview + Phase 2 helpers). Owner: copy artifact over packages/db/src/data.ts and push.
