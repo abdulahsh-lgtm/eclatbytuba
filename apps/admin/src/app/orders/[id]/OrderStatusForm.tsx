@@ -34,10 +34,10 @@ export function OrderStatusForm({
   const handleUpdate = async () => {
     setLoading(true);
     try {
-      const base = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-      const res = await fetch(`${base}/api/orders/${orderId}`, {
+      const res = await fetch(`/api/orders/${orderId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({
           status,
           notes: notes || null,
@@ -82,7 +82,7 @@ export function OrderStatusForm({
           rows={3}
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          placeholder="Refund note, customer request…"
+          placeholder="Refund note, customer request"
         />
       </div>
       <Button onClick={handleUpdate} disabled={loading} className="w-full">

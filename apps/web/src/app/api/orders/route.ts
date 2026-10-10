@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getOrders, createOrder, CheckoutError } from "@eclat/db";
+import { requireAdminSession } from "@eclat/auth";
 import { rateLimit, RATE_LIMITS, clientKey } from "@eclat/config";
 import { sendOrderConfirmation } from "@eclat/emails";
 
-export async function GET() {
+/** List all orders - admin session required. */
+export async function GET(req: NextRequest) {
   try {
+    const admin = await requireAdminSession(req);
+    if (!admin) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const orders = await getOrders();
     return NextResponse.json({ orders });
   } catch (e: unknown) {
@@ -16,6 +22,7 @@ export async function GET() {
   }
 }
 
+/** Create order - public checkout; server is authoritative for totals. */
 export async function POST(req: NextRequest) {
   try {
     const ip =
