@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getOrderById } from "@eclat/db";
+import {
+  getOrderById,
+  getExistingPaymentIntentId,
+  attachPaymentIntent,
+  isOrderPayable,
+} from "@eclat/db";
 
 /**
- * Create a Stripe PaymentIntent for an existing order.
- * Amount and currency are ALWAYS taken from the persisted order — never from the client body.
- * Production fails closed when STRIPE_SECRET_KEY is missing (no mock payment path).
+ * Phase 2 — Create or reuse a Stripe PaymentIntent for an existing order.
+ * Amount/currency always from persisted order. Never from client body.
+ * Reuses an existing PENDING intent when present (avoids duplicate intents on retry).
+ * Production fails closed without STRIPE_SECRET_KEY.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -19,6 +25,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Ignore any client-supplied amount/currency/status
     const order = await getOrderById(orderId);
     if (!order) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
@@ -26,13 +33,14 @@ export async function POST(req: NextRequest) {
 
     const status = String((order as any).status || "");
     const paymentStatus = String((order as any).paymentStatus || "");
-    if (paymentStatus === "PAID") {
-      return NextResponse.json(
-        { error: "Order is already paid" },
-        { status: 409 }
-      );
-    }
-    if (status === "CANCELLED" || status === "REFUNDED") {
+
+    if (!isOrderPayable(status, paymentStatus)) {
+      if (paymentStatus === "PAID") {
+        return NextResponse.json(
+          { error: "Order is already paid" },
+          { status: 409 }
+        );
+      }
       return NextResponse.json(
         { error: "Order is not payable" },
         { status: 409 }
@@ -77,6 +85,32 @@ export async function POST(req: NextRequest) {
     const Stripe = (await import("stripe")).default;
     const stripe = new Stripe(secretKey, { apiVersion: "2024-06-20" });
 
+    // Reuse existing intent when safe
+    const existingId = await getExistingPaymentIntentId(orderId);
+    if (existingId) {
+      try {
+        const existing = await stripe.paymentIntents.retrieve(existingId);
+        const reusable =
+          existing.status === "requires_payment_method" ||
+          existing.status === "requires_confirmation" ||
+          existing.status === "requires_action";
+        const amountOk = existing.amount === amountMinor;
+        const currencyOk =
+          existing.currency.toLowerCase() === currency;
+        if (reusable && amountOk && currencyOk && existing.client_secret) {
+          return NextResponse.json({
+            clientSecret: existing.client_secret,
+            paymentIntentId: existing.id,
+            amount: orderTotal,
+            currency: currency.toUpperCase(),
+            reused: true,
+          });
+        }
+      } catch (retrieveErr) {
+        console.warn("Could not reuse payment intent:", retrieveErr);
+      }
+    }
+
     const intent = await stripe.paymentIntents.create({
       amount: amountMinor,
       currency,
@@ -86,6 +120,12 @@ export async function POST(req: NextRequest) {
       },
       automatic_payment_methods: { enabled: true },
     });
+
+    try {
+      await attachPaymentIntent(orderId, intent.id);
+    } catch (attachErr) {
+      console.warn("attachPaymentIntent skipped:", attachErr);
+    }
 
     return NextResponse.json({
       clientSecret: intent.client_secret,

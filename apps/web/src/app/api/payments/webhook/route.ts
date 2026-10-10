@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getOrderById, updateOrderStatus } from "@eclat/db";
+import {
+  confirmOrderPaid,
+  markPaymentFailed,
+} from "@eclat/db";
 
 /**
- * Stripe webhook handler.
- * Signature verification is required. Amount/currency consistency is checked against the order.
- * On success: confirms order and marks payment PAID when possible.
+ * Phase 2 — Stripe webhook handler.
+ * - Signature verified against raw body
+ * - Event processing is idempotent (StripeWebhookEvent ledger + state machine)
+ * - Order marked PAID only when amount/currency/order match verified intent
+ * - Never trusts client input for payment status
  */
 export async function POST(req: NextRequest) {
   const secretKey = process.env.STRIPE_SECRET_KEY?.trim();
@@ -39,87 +44,64 @@ export async function POST(req: NextRequest) {
           amount: number;
           currency: string;
           metadata?: { orderId?: string };
+          status?: string;
         };
+
+        // Only accept successful intents
+        if (intent.status && intent.status !== "succeeded") {
+          console.warn("Ignoring non-succeeded intent status:", intent.status);
+          break;
+        }
+
         const orderId = intent.metadata?.orderId;
         if (!orderId) {
           console.warn("Payment succeeded without orderId metadata:", intent.id);
           break;
         }
 
-        const order = await getOrderById(orderId);
-        if (!order) {
-          console.warn("Payment for unknown order:", orderId, intent.id);
-          break;
-        }
+        const result = await confirmOrderPaid({
+          orderId,
+          paymentIntentId: intent.id,
+          amountMinor: intent.amount,
+          currency: intent.currency,
+          stripeEventId: event.id,
+        });
 
-        // Idempotent: already paid
-        if (String((order as any).paymentStatus) === "PAID") {
-          console.log("Order already paid:", orderId);
-          break;
-        }
-
-        const orderTotalMinor = Math.round(Number((order as any).total) * 100);
-        const orderCurrency = String((order as any).currency || "PKR").toLowerCase();
-
-        if (
-          intent.amount !== orderTotalMinor ||
-          intent.currency.toLowerCase() !== orderCurrency
-        ) {
-          console.error("Payment amount/currency mismatch", {
+        if (!result.ok) {
+          console.error("confirmOrderPaid rejected:", result.reason, {
             orderId,
-            expectedAmount: orderTotalMinor,
-            gotAmount: intent.amount,
-            expectedCurrency: orderCurrency,
-            gotCurrency: intent.currency,
+            intentId: intent.id,
           });
+          // Return 200 so Stripe does not retry forever on business rejects
+          // (mismatch / cancelled). Signature was valid.
           break;
         }
-
-        try {
-          await updateOrderStatus(orderId, "CONFIRMED");
-          // Best-effort: update payment records if prisma available
-          try {
-            const { prisma } = await import("@eclat/db");
-            if (prisma?.payment?.updateMany) {
-              await prisma.payment.updateMany({
-                where: { orderId },
-                data: {
-                  status: "PAID",
-                  transactionId: intent.id,
-                },
-              });
-              await prisma.order.update({
-                where: { id: orderId },
-                data: {
-                  paymentStatus: "PAID",
-                  paidAt: new Date(),
-                },
-              });
-            }
-          } catch (payErr) {
-            console.warn("Payment row update skipped:", payErr);
-          }
-        } catch (updateErr) {
-          console.error("Failed to update order after payment:", updateErr);
+        if (result.alreadyPaid) {
+          console.log("Idempotent webhook: already paid", orderId, event.id);
+        } else {
+          console.log("Payment confirmed:", intent.id, "order:", orderId);
         }
-        console.log("Payment succeeded:", intent.id, "order:", orderId);
         break;
       }
       case "payment_intent.payment_failed": {
-        const intent = event.data.object as { id: string; metadata?: { orderId?: string } };
-        console.log("Payment failed:", intent.id);
-        if (intent.metadata?.orderId) {
-          try {
-            const { prisma } = await import("@eclat/db");
-            if (prisma?.payment?.updateMany) {
-              await prisma.payment.updateMany({
-                where: { orderId: intent.metadata.orderId },
-                data: { status: "FAILED", transactionId: intent.id },
-              });
-            }
-          } catch {
-            /* best-effort */
-          }
+        const intent = event.data.object as {
+          id: string;
+          metadata?: { orderId?: string };
+        };
+        const orderId = intent.metadata?.orderId;
+        if (!orderId) {
+          console.log("Payment failed without orderId:", intent.id);
+          break;
+        }
+        const result = await markPaymentFailed({
+          orderId,
+          paymentIntentId: intent.id,
+          stripeEventId: event.id,
+        });
+        if (!result.ok) {
+          console.warn("markPaymentFailed:", result.reason, orderId);
+        } else {
+          console.log("Payment marked failed:", intent.id, orderId);
         }
         break;
       }
