@@ -79,7 +79,7 @@ Order path works; admin can fulfill.
 ## PHASE 4 — Advanced PDP + Verified Reviews
 
 ### Tasks
-Full PDP, verified reviews only, JSON-LD start.
+PDP conversion, reviews require orderId, related products.
 
 ### DoD
 PDP conversion-ready; reviews need orderId.
@@ -89,138 +89,36 @@ PDP conversion-ready; reviews need orderId.
 ## PHASE 5 — Analytics + Pixels
 
 ### Tasks
-Admin analytics incl. **avg session duration**, Meta/GA4 pixels, funnel events.
+Meta/GA pixels, basic dashboard hits.
 
 ### DoD
-Owner sees metrics on phone; pixels ready.
+Pixels fire; admin can see counts.
 
 ---
 
 ## PHASE 6 — Play Element + Settings
 
 ### Tasks
-Cherry SVG play element; admin payments + email + play config.
+Email/payment settings store, play element.
 
 ### DoD
-Play live lightweight; settings on phone.
+Admin settings usable; public settings secret-free.
 
 ---
 
-## PHASE 7 — SEO / AEO / PWA / Security / Performance
+## PHASE 7 — SEO / PWA / Security / Performance
 
-**Goal:** Rank for **all catalog products** (not only Rhode/Kiko) in organic results **and** AI Overviews where possible; PWA + security + speed.  
-**Honest:** “#1 for every query” is not guaranteed — maximise probability with the checklist below.
+### Tasks
+Technical SEO, PWA, security headers, perf budget.
 
-### 7.1 Business facts (every page)
-- All Pakistan delivery  
-- COD  
-- Shipping **Rs 250**  
-- Verified reviews only  
-
-### 7.2 Product: Kiko 3D Hydra Lipgloss (owner add)
-| Field | Value |
-|-------|--------|
-| Name | Kiko 3D Hydra Lipgloss |
-| Slug | `kiko-3d-hydra-lipgloss` |
-| Price | **1499** PKR (compare 1999) |
-| Shades (6) | 01 Clear, 05 Pearly Pink, 11 Golden Red, 12 Pearly Amaryllis Red, 17 Pearly Mauve, 21 Brun Rose |
-| SEO title | Kiko 3D Hydra Lipgloss Pakistan \| 6 Shades \| Rs 1499 \| COD |
-
-Wire into seed (`seed-kiko.ts` → `data.ts`). PDP: shade table, FAQ, schema, COD Rs 250.
-
-### 7.3 SEO kit — every product
-1. Unique title `{Product} Pakistan | Price | COD`  
-2. Unique meta 150–160 chars + COD Rs 250  
-3. Unique H1  
-4. 400–800 words original description  
-5. FAQ 5–8 → FAQPage schema  
-6. Product + Offer schema (PKR)  
-7. Review schema only if real ratings  
-8. BreadcrumbList  
-9. Alt text with product/shade  
-10. Internal links (collection + 2 related)  
-11. WebP LCP image  
-12. Canonical URL  
-
-**Priority:** P0 Rhode peptide, Kiko, Everyday Glam Kit → P1 lip sets/gloss → P2 kits/nails → P3 under 1000/2000 PKR long-tails.
-
-### 7.4 Keywords (pattern per SKU)
-`{product} pakistan` · price · COD · lahore · original · `{category} under {price}`  
-Hero: rhode lip peptide pakistan, kiko 3d hydra / kiko lipgloss pakistan, lip sets, glam kit, press-on nails, etc.
-
-### 7.5 AEO (AI Overview)
-Answer-first first ~40 words; one-sentence FAQ leads; definition boxes; comparison tables; Last updated; entity name consistency; Organization clarity; Urdu+EN FAQ where demand; no thin AI spam; HowTo/ItemList schema where fit; HTML text not image-only copy; align FAQs to real PAA-style queries.
-
-### 7.6 Technical (code tasks)
-- Dynamic sitemap.xml + robots.txt  
-- OG + Twitter per product  
-- JSON-LD Product/Offer/FAQ/Breadcrumb/ItemList  
-- noindex cart/checkout/account  
-- Canonicals; 301 old Shopify URLs if any  
-- CWV: LCP/CLS; preload hero only  
-- PWA manifest (+ light SW optional)  
-- Security headers/CSP/rate-limit audit; secrets never client-side  
-- GSC submit sitemap  
-
-### 7.7 Content pillars (min)
-1. Rhode Lip Peptide Pakistan (price, COD, authenticity)  
-2. Kiko 3D Hydra Pakistan (6 shades)  
-3. Lip sets under 2000 PKR  
-4. Everyday glam kit contents  
-5. Imported makeup COD Pakistan / shipping Rs 250  
-
-### 7.8 Off-page / traffic (execute over time)
-GBP if applicable; Pinterest/TikTok exact names; micro-influencers disclose; PK blog outreach; Shorts + transcripts; email restock; digital PR; broken-link reclaim; no doorway city spam.
-
-### 7.9 E-E-A-T / Pakistan
-Real About + contact; policies linked; verified reviews with shade names; footer trust: **COD · Rs 250 · all Pakistan**; honest original/imported claims only.
-
-### 7.10 Measurement
-GSC by product query; CTR title tests; monthly AI Overview check sheet; expand FAQ from queries; HISTORY log SEO changes.
-
-### 7.11 Extended tactic backlog (batch 2 — agents must use)
-
-**AEO 1–25:** answer-first PDP; short FAQ leads; PAA-style FAQs; HowTo schema; ItemList hubs; entity spelling; brand+product+PK links; TL;DR; tables; no stuffing; original photos; video transcripts; Updated date; author line; only verifiable facts; topic clusters; Q&A only if substantial; speakable bullets; define jargon once; no doorway pages; one price canonical per hero; shipping structured data if possible; HTML-visible copy; fast HTML; match Overview-query phrasing.
-
-**Technical 26–45:** self-canonicals; noindex private flows; clean pagination; fix redirects/mixed content; 301 legacy; param canonical; HSTS; preload LCP only; fetchpriority hero; lazy below-fold; small critical CSS; async pixels; CLS stability; useful 404; sitemap split later; image sitemap P0; hreflang only if real; SSR/static PDP HTML; weekly GSC coverage; fix thin crawled-not-indexed.
-
-**On-page 46–70:** ~60 char titles; related H1; secondary H2s; SEO filenames; good alts; 1+2 keywords max; one careful brand outbound; 3–5 internal links/guide; cornerstone hubs; honest stock; owned comparisons; who-it’s-for; care sections; unique bundles; seasonal yearly; Urdu FAQ; glossary; WhatsApp→FAQ; no thin manufacturer paste; completeness > wordcount; TOC; no CLS from TOC; linkable charts; price-check dates; no duplicate thin SKUs.
-
-**Trust 71–82:** real About; contact; policies; verified reviews; shade names in reviews; honest returns; proof for “original”; human presence; NAP if GBP; ATC trust copy; no fake timers; disclose affiliates.
-
-**Pakistan 83–92:** Rs 250 footer strip; truthful city FAQs only; local pay methods; PKR schema; GSC Urdu queries; value-first communities; MUA lookbooks; real local mentions; courier page if true; real dispatch cutoffs.
-
-**Off-page 93–110:** PR data stories; journalist requests; broken links; unlinked mentions; podcasts; Pinterest; no wiki spam; embeddable swatches; student discount page; non-competing cross-links; annual trends asset; Reel transcripts; helpful forums; Quora; live replay pages; courier features; tracked creators; reclaim post-migration mentions.
-
-**Measure 111–120:** weekly GSC product filter; rank P0; low CTR → rewrite; snippet tests; bounce→answer+speed; Overview win/loss sheet; quarterly FAQ expand; prune thin fails; HISTORY SEO logs; re-crawl after PDP upgrades.
-
-### 7.12 This-week code priority
-1. Answer-first + FAQ schema P0 PDPs  
-2. Sitewide COD + Rs 250 copy  
-3. Sitemap + Product JSON-LD  
-4. Merge Kiko into seed + variants  
-5. Rhode/Kiko pillar pages or drafts  
-6. GSC when domain live  
-
-### Phase 7 Acceptance Criteria
-- [ ] Kiko live @ 1499 with 6 shades in data layer  
-- [ ] Shipping Rs 250 + COD + all Pakistan consistent in UI  
-- [ ] sitemap.xml + robots.txt  
-- [ ] Product (+ FAQ on P0) JSON-LD  
-- [ ] SEO title/description used in metadata  
-- [ ] PWA manifest basics  
-- [ ] Security/performance audit notes in HISTORY  
-- [ ] Soft Gloss + single font still enforced  
-- [ ] No extra SEO plan files (all detail stays in this Phase 7 section)  
-
-### Phase 7 Definition of Done
-Technical SEO live; AEO-oriented PDP/FAQ/schema on priority SKUs; Kiko + shipping facts; PWA/security/perf acceptable; all tactics tracked only via this Phase 7 section + HISTORY.
+### DoD
+Technical SEO live; performance acceptable.
 
 ---
 
 ## PHASE 8 — Import 67 Products + Launch
 
-Import catalog (+ Kiko), collections, final settings, E2E COD test, launch checklist (theme, verified reviews, analytics, play, mobile admin, HISTORY).
+Import catalog (+ Kiko), collections, final settings, E2E COD test, launch checklist.
 
 ### DoD
 Full catalog purchasable; owner manages from phone.
@@ -237,3 +135,25 @@ Full catalog purchasable; owner manages from phone.
 6. **Never add parallel plan markdown files** — extend the phase section here.
 
 **Soft Gloss Pastel + Plus Jakarta Sans + Verified Reviews + Avg Session + Play + SEO/AEO in Phase 7 only = path forward.**
+
+## SECURITY PHASE 3 — Admin API lock-down + order-status integrity
+
+**Goal:** Close residual authorization and abuse gaps after checkout/payment Phases 1–2.
+
+### Tasks
+1. Require admin session on settings (GET ?admin=1, PUT), products POST/PUT, upload POST, reviews admin GET/PATCH, dashboard GET.
+2. Enforce allow-listed order status transitions in `updateOrderStatus`.
+3. Apply `RATE_LIMITS.login` on admin login.
+4. Keep public settings free of raw secrets; document Stripe vs COD/JazzCash policy in PHASES_STATUS when owner decides.
+5. Tests for order transitions and public settings shape.
+
+### Status (2026-10-12)
+- **Completed (code on branch):** Admin session on settings, products mutate, upload, reviews moderate/list, dashboard; login rate limit; `ORDER_TRANSITIONS` + `assertOrderStatusTransition` in payment-state; `updateOrderStatus` enforces transitions; Phase 3 unit tests.
+- **Pending / external:** Commit real `pnpm-lock.yaml` via normal Git (Contents API unsafe for 141KB); apply Phase 2 migration on staging after backup; owner decision on Stripe vs PK-local payment docs.
+- **Unverified here:** Multi-instance rate-limit store; Stripe test-mode E2E on staging; production builds in this environment.
+
+### DoD
+- Unauthenticated clients cannot read admin secrets, mutate catalog, upload files, moderate reviews, or read dashboard stats.
+- Illegal order status transitions rejected.
+- Login rate-limited.
+- Focused Phase 3 tests pass; Phase 1/2 suites still pass.
