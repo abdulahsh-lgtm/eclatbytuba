@@ -2,6 +2,18 @@
 
 ---
 
+## 2026-10-12 — Security Phase 3 completion: order status enforcement
+
+**What**
+- `updateOrderStatus` calls `assertOrderStatusTransition` (DB + in-memory paths)
+- PROJECT_PLAN SECURITY PHASE 3 status updated (completed vs pending)
+
+**Why**
+- Transition helpers existed; order status updates were still unrestricted on remote
+
+---
+
+
 ## 2026-10-12 — Security Phase 3: admin API lock-down
 
 **What**
