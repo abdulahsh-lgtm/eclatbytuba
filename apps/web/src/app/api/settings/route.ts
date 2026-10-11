@@ -5,15 +5,20 @@ import {
   updateSettings,
   type StoreSettings,
 } from "@eclat/db";
+import { requireAdminSession } from "@eclat/auth";
 
 /**
- * GET ?admin=1 → full settings (admin)
- * GET → public (no secrets)
- * PUT → update settings
+ * GET → public settings (no secrets)
+ * GET ?admin=1 → full settings (admin session required)
+ * PUT → update settings (admin session required)
  */
 export async function GET(request: NextRequest) {
-  const admin = request.nextUrl.searchParams.get("admin") === "1";
-  if (admin) {
+  const adminFlag = request.nextUrl.searchParams.get("admin") === "1";
+  if (adminFlag) {
+    const admin = await requireAdminSession(request);
+    if (!admin) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     return NextResponse.json(getAdminSettings());
   }
   return NextResponse.json(getPublicSettings());
@@ -21,6 +26,10 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    const admin = await requireAdminSession(request);
+    if (!admin) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const body = (await request.json()) as Partial<StoreSettings>;
     const updated = updateSettings(body);
     return NextResponse.json(updated);
