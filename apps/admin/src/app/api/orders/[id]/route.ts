@@ -8,7 +8,7 @@ import { getOrderById, updateOrderStatus, CheckoutError } from "@eclat/db";
  */
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { id: string }
+  { params }: { params: { id: string } }
 ) {
   try {
     const order = await getOrderById(params.id);
