@@ -2,6 +2,20 @@
 
 ---
 
+## 2026-10-12 — Security Phase 3: admin API lock-down
+
+**What**
+- Admin session required on settings (admin), products mutate, upload, reviews moderate/list, dashboard
+- Order status transition table enforced in updateOrderStatus
+- Admin login rate limit (RATE_LIMITS.login)
+- Tests: order-status.phase3.test.ts, admin-api.phase3.test.ts
+- PROJECT_PLAN: SECURITY PHASE 3 section
+
+**Why**
+- Unauthenticated admin routes could leak secrets and mutate catalog/payments
+
+---
+
 ## 2026-09-28 — SEO 100 checklist: max code pass
 
 **What**
