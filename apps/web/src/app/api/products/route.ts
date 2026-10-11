@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getProducts, createProduct, updateProduct } from "@eclat/db";
+import { requireAdminSession } from "@eclat/auth";
 
 export async function GET(req: NextRequest) {
   try {
@@ -7,6 +8,13 @@ export async function GET(req: NextRequest) {
     const category = searchParams.get("category") || undefined;
     const featured = searchParams.get("featured") === "true";
     const admin = searchParams.get("admin") === "true";
+
+    if (admin) {
+      const session = await requireAdminSession(req);
+      if (!session) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+    }
 
     const products = await getProducts({
       categorySlug: category,
@@ -23,6 +31,10 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const session = await requireAdminSession(req);
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const body = await req.json();
     const product = await createProduct({
       name: body.name,
@@ -46,6 +58,10 @@ export async function POST(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
+    const session = await requireAdminSession(req);
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const body = await req.json();
     if (!body.id) {
       return NextResponse.json({ error: "id required" }, { status: 400 });

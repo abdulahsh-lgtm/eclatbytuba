@@ -2,14 +2,42 @@ import { NextRequest, NextResponse } from "next/server";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import { validateImageFile } from "@eclat/ui";
+import { requireAdminSession } from "@eclat/auth";
+import { rateLimit, RATE_LIMITS, clientKey } from "@eclat/config";
 
 /**
- * Image upload — validates via packages/ui media helpers.
+ * Image upload — admin session required.
+ * Validates via packages/ui media helpers.
  * Saves to public/uploads/ in development.
- * Production: swap for Cloudflare R2 / Images + compression pipeline.
  */
 export async function POST(req: NextRequest) {
   try {
+    const admin = await requireAdminSession(req);
+    if (!admin) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const ip =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      req.headers.get("x-real-ip") ||
+      "unknown";
+    const rl = rateLimit({
+      key: clientKey("upload", ip),
+      limit: RATE_LIMITS.upload.limit,
+      windowMs: RATE_LIMITS.upload.windowMs,
+    });
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: "Too many uploads. Try again later." },
+        {
+          status: 429,
+          headers: rl.retryAfterMs
+            ? { "Retry-After": String(Math.ceil(rl.retryAfterMs / 1000)) }
+            : undefined,
+        }
+      );
+    }
+
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
 
