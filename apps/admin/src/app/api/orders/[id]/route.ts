@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getOrderById, updateOrderStatus } from "@eclat/db";
+import { getOrderById, updateOrderStatus, CheckoutError } from "@eclat/db";
 
 /**
  * Admin-app order update. Session is enforced by apps/admin middleware
@@ -8,7 +8,7 @@ import { getOrderById, updateOrderStatus } from "@eclat/db";
  */
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string }
 ) {
   try {
     const order = await getOrderById(params.id);
@@ -44,6 +44,12 @@ export async function PATCH(
     }
     return NextResponse.json({ order });
   } catch (e: unknown) {
+    if (e instanceof CheckoutError || (e as any)?.name === "CheckoutError") {
+      return NextResponse.json(
+        { error: (e as Error).message, code: (e as CheckoutError).code },
+        { status: 400 }
+      );
+    }
     console.error(e);
     return NextResponse.json(
       { error: "Unable to update order" },

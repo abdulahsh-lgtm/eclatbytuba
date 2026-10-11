@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getOrderById, updateOrderStatus } from "@eclat/db";
+import { getOrderById, updateOrderStatus, CheckoutError } from "@eclat/db";
 import { requireAdminSession } from "@eclat/auth";
 
 /** Single order - admin session required (contains customer PII). */
@@ -51,6 +51,12 @@ export async function PATCH(
     }
     return NextResponse.json({ order });
   } catch (e: unknown) {
+    if (e instanceof CheckoutError || (e as any)?.name === "CheckoutError") {
+      return NextResponse.json(
+        { error: (e as Error).message, code: (e as CheckoutError).code },
+        { status: 400 }
+      );
+    }
     console.error(e);
     return NextResponse.json(
       { error: "Unable to update order" },

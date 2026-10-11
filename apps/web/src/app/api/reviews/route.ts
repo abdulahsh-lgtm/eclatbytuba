@@ -6,6 +6,7 @@ import {
   getAllReviews,
   moderateReview,
 } from "@eclat/db";
+import { requireAdminSession } from "@eclat/auth";
 import { rateLimit, RATE_LIMITS, clientKey } from "@eclat/config";
 
 export async function GET(req: NextRequest) {
@@ -15,6 +16,10 @@ export async function GET(req: NextRequest) {
     const admin = searchParams.get("admin") === "true";
 
     if (admin) {
+      const session = await requireAdminSession(req);
+      if (!session) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
       const reviews = await getAllReviews();
       return NextResponse.json({ reviews });
     }
@@ -84,6 +89,10 @@ export async function POST(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
+    const session = await requireAdminSession(req);
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const body = await req.json();
     if (!body.id || typeof body.isApproved !== "boolean") {
       return NextResponse.json(
