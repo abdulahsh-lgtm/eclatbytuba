@@ -80,3 +80,37 @@ export function canMarkPaymentFailed(
 ): boolean {
   return canTransitionPayment(paymentStatus || "PENDING", "FAILED");
 }
+
+/** Allowed order status transitions. Terminal states have empty or limited sets. */
+export const ORDER_TRANSITIONS: Record<
+  OrderStatusValue,
+  ReadonlySet<OrderStatusValue>
+> = {
+  PENDING: new Set(["CONFIRMED", "PROCESSING", "CANCELLED"]),
+  CONFIRMED: new Set(["PROCESSING", "SHIPPED", "CANCELLED"]),
+  PROCESSING: new Set(["SHIPPED", "CANCELLED"]),
+  SHIPPED: new Set(["DELIVERED", "REFUNDED"]),
+  DELIVERED: new Set(["REFUNDED"]),
+  CANCELLED: new Set(),
+  REFUNDED: new Set(),
+};
+
+export function canTransitionOrder(from: string, to: string): boolean {
+  if (from === to) return true;
+  const allowed = ORDER_TRANSITIONS[from as OrderStatusValue];
+  if (!allowed) return false;
+  return allowed.has(to as OrderStatusValue);
+}
+
+export function assertOrderStatusTransition(
+  from: string,
+  to: string
+): { ok: true } | { ok: false; reason: string } {
+  if (!(to in ORDER_TRANSITIONS)) {
+    return { ok: false, reason: "invalid_status" };
+  }
+  if (!canTransitionOrder(from, to)) {
+    return { ok: false, reason: "invalid_order_transition" };
+  }
+  return { ok: true };
+}

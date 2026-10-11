@@ -12,8 +12,45 @@ export const prisma =
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
-export * from "./data";
-export * from "./checkout";
+export * from "@prisma/client";
+export default prisma;
+
+export {
+  getCategories,
+  getProducts,
+  getProductBySlug,
+  getProductById,
+  createProduct,
+  updateProduct,
+  getAllProductImages,
+  getOrders,
+  getOrderById,
+  createOrder,
+  updateOrderStatus,
+  confirmOrderPaid,
+  markPaymentFailed,
+  attachPaymentIntent,
+  getExistingPaymentIntentId,
+  getDashboardStats,
+  getProductReviews,
+  getReviewStats,
+  getAllReviews,
+  createReview,
+  moderateReview,
+} from "./data";
+
+export {
+  CheckoutError,
+  validateEmail,
+  validateQuantity,
+  normalizeCheckoutItems,
+  computeLineTotal,
+  computeOrderTotals,
+  generateOrderNumber,
+  normalizeIdempotencyKey,
+  assertFinancialInvariants,
+} from "./checkout";
+
 export {
   canTransitionPayment,
   isOrderPayable,
@@ -34,9 +71,9 @@ export {
 } from "./analytics-store";
 
 export {
+  getSettings,
   getPublicSettings,
   getAdminSettings,
-  getSettings,
   updateSettings,
 } from "./settings-store";
-export type { StoreSettings } from "./settings-store";
+export type { StoreSettings, PaymentMethodId } from "./settings-store";
