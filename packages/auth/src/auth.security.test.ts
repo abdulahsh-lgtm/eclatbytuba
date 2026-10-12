@@ -40,6 +40,48 @@ async function main() {
     assert(!isAdminRole(undefined), "undefined");
   });
 
+  await test("production rejects weak auth secrets and demo admin passwords", async () => {
+    const oldNodeEnv = process.env.NODE_ENV;
+    const oldAuthSecret = process.env.AUTH_SECRET;
+    const oldNextAuthSecret = process.env.NEXTAUTH_SECRET;
+    const oldAdminEmail = process.env.ADMIN_EMAIL;
+    const oldAdminPassword = process.env.ADMIN_PASSWORD;
+    try {
+      process.env.NODE_ENV = "production";
+      process.env.AUTH_SECRET = "short-secret";
+      delete process.env.NEXTAUTH_SECRET;
+      process.env.ADMIN_EMAIL = "admin@eclatbytuba.com";
+      process.env.ADMIN_PASSWORD = "eclat2026";
+      let secretRejected = false;
+      try {
+        await createSessionToken({
+          id: "weak-secret-test",
+          email: "admin@eclatbytuba.com",
+          name: "Admin",
+          role: "SUPER_ADMIN",
+        });
+      } catch {
+        secretRejected = true;
+      }
+      assert(secretRejected, "weak production secret must be rejected");
+      assert(
+        (await authenticateAdmin("admin@eclatbytuba.com", "eclat2026")) === null,
+        "demo password must be rejected in production"
+      );
+    } finally {
+      if (oldNodeEnv === undefined) delete process.env.NODE_ENV;
+      else process.env.NODE_ENV = oldNodeEnv;
+      if (oldAuthSecret === undefined) delete process.env.AUTH_SECRET;
+      else process.env.AUTH_SECRET = oldAuthSecret;
+      if (oldNextAuthSecret === undefined) delete process.env.NEXTAUTH_SECRET;
+      else process.env.NEXTAUTH_SECRET = oldNextAuthSecret;
+      if (oldAdminEmail === undefined) delete process.env.ADMIN_EMAIL;
+      else process.env.ADMIN_EMAIL = oldAdminEmail;
+      if (oldAdminPassword === undefined) delete process.env.ADMIN_PASSWORD;
+      else process.env.ADMIN_PASSWORD = oldAdminPassword;
+    }
+  });
+
   if (isProd) {
     await test("production rejects missing admin env credentials", async () => {
       const prevEmail = process.env.ADMIN_EMAIL;
