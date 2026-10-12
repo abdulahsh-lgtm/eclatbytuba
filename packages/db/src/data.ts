@@ -496,6 +496,7 @@ export async function markPaymentFailed(input: {
     order.payments[0].status = "FAILED";
     order.payments[0].transactionId = input.paymentIntentId;
   }
+  order.paymentStatus = "FAILED";
   return { ok: true };
 }
 
@@ -506,8 +507,14 @@ export async function attachPaymentIntent(orderId: string, paymentIntentId: stri
   }
   ensureMemSeed();
   const order = mem.orders.find((o: any) => o.id === orderId);
-  if (order?.payments?.[0] && order.payments[0].status === "PENDING")
-    order.payments[0].transactionId = paymentIntentId;
+  const pending = order?.payments?.find((p: any) => p.status === "PENDING");
+  if (pending) {
+    pending.transactionId = paymentIntentId;
+    return;
+  }
+  if (!order?.payments?.some((p: any) => p.transactionId === paymentIntentId)) {
+    throw new Error("No pending payment was available for PaymentIntent attachment.");
+  }
 }
 
 export async function getExistingPaymentIntentId(orderId: string): Promise<string | null> {
