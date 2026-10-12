@@ -37,14 +37,30 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await req.json();
-    if (!body.status) {
+    const body: unknown = await req.json().catch(() => null);
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return NextResponse.json({ error: "Invalid order update request" }, { status: 400 });
+    }
+    const update = body as Record<string, unknown>;
+    if (typeof update.status !== "string" || !update.status.trim()) {
       return NextResponse.json({ error: "status is required" }, { status: 400 });
     }
+    if (
+      (update.notes !== undefined && update.notes !== null && typeof update.notes !== "string") ||
+      (update.trackingNumber !== undefined && update.trackingNumber !== null && typeof update.trackingNumber !== "string")
+    ) {
+      return NextResponse.json({ error: "notes and trackingNumber must be strings" }, { status: 400 });
+    }
+    if (
+      (typeof update.notes === "string" && update.notes.length > 2000) ||
+      (typeof update.trackingNumber === "string" && update.trackingNumber.length > 100)
+    ) {
+      return NextResponse.json({ error: "Order notes or tracking number is too long" }, { status: 400 });
+    }
 
-    const order = await updateOrderStatus(params.id, body.status, {
-      notes: body.notes,
-      trackingNumber: body.trackingNumber,
+    const order = await updateOrderStatus(params.id, update.status, {
+      notes: update.notes as string | null | undefined,
+      trackingNumber: update.trackingNumber as string | null | undefined,
     });
     if (!order) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
@@ -56,6 +72,12 @@ export async function PATCH(
         { error: (e as Error).message, code: (e as CheckoutError).code },
         { status: 400 }
       );
+    }
+    if (
+      e instanceof Error &&
+      (e.message === "invalid_status" || e.message === "invalid_order_transition")
+    ) {
+      return NextResponse.json({ error: e.message }, { status: 400 });
     }
     console.error(e);
     return NextResponse.json(
