@@ -49,7 +49,8 @@ The product phases below are the numbered phases in this plan. Security remediat
 - [ ] Resolve the missing pnpm lockfile and ensure clean, reproducible dependency installation.
 - [x] Require a short-lived signed order-bound token for create-intent; issue it only for custom_gateway checkout responses.
 - [ ] Run route tests proving missing, invalid, expired, and wrong-order tokens never return a client secret.
-- [ ] Confirm no production path enables in-memory/mock payment behavior.
+- [x] Keep the Stripe create-intent route disabled in production unless `STRIPE_PAYMENTS_ENABLED=true` is explicitly set.
+- [ ] Confirm no production path enables in-memory/mock payment behavior and verify the feature flag in a production-like test.
 - [ ] Do not mark security work complete until each applicable checkbox has test output or documented reason/evidence.
 
 ### Phase-by-phase carry-forward checks
