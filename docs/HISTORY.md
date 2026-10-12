@@ -2,6 +2,20 @@
 
 ---
 
+## 2026-10-13 — Payment retry and webhook transaction fixes
+
+**What**
+- Added a stable Stripe idempotency key per order so retries after a database write failure reuse the same PaymentIntent.
+- Stop returning a client secret when the PaymentIntent cannot be attached to the order's pending payment record.
+- Move Stripe webhook ledger writes after order/payment validation and state updates, inside the same transaction, so rejected events do not get recorded as processed.
+- Update the order payment status when a payment fails and make PaymentIntent attachment fail loudly when no matching payment record exists.
+
+**Verification**
+- Reviewed the updated remote source and confirmed the intended guards are present.
+- Runtime tests, typecheck, Prisma validation, and build still need to run in a Node/pnpm environment with dependencies installed.
+
+---
+
 ## 2026-10-12 — Checkout/payment verification and admin API guards
 
 **What**
