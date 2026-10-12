@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAdminSession } from "@eclat/auth";
 import { getProducts, createProduct, updateProduct } from "@eclat/db";
 
 export async function GET(req: NextRequest) {
@@ -7,6 +8,12 @@ export async function GET(req: NextRequest) {
     const category = searchParams.get("category") || undefined;
     const featured = searchParams.get("featured") === "true";
     const admin = searchParams.get("admin") === "true";
+    if (admin) {
+      const session = await requireAdminSession(req);
+      if (!session) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+    }
 
     const products = await getProducts({
       categorySlug: category,
@@ -22,6 +29,10 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const admin = await requireAdminSession(req);
+  if (!admin) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   try {
     const body = await req.json();
     const product = await createProduct({
@@ -45,6 +56,10 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
+  const admin = await requireAdminSession(req);
+  if (!admin) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   try {
     const body = await req.json();
     if (!body.id) {
