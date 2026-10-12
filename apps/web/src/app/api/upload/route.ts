@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireAdminSession } from "@eclat/auth";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import { validateImageFile } from "@eclat/ui";
@@ -9,6 +10,10 @@ import { validateImageFile } from "@eclat/ui";
  * Production: swap for Cloudflare R2 / Images + compression pipeline.
  */
 export async function POST(req: NextRequest) {
+  const admin = await requireAdminSession(req);
+  if (!admin) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   try {
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
