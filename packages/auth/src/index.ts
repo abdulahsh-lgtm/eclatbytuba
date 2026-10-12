@@ -1,9 +1,18 @@
 import { SignJWT, jwtVerify } from "jose";
 
-const SECRET = () =>
-  new TextEncoder().encode(
-    process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET || "eclat-dev-secret-change-me"
-  );
+function resolveAuthSecret(): string {
+  const secret =
+    process.env.NEXTAUTH_SECRET?.trim() || process.env.AUTH_SECRET?.trim();
+  if (secret) return secret;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "NEXTAUTH_SECRET or AUTH_SECRET must be set in production"
+    );
+  }
+  return "eclat-dev-secret-change-me";
+}
+
+const SECRET = () => new TextEncoder().encode(resolveAuthSecret());
 
 export type SessionUser = {
   id: string;
@@ -41,18 +50,70 @@ export async function verifySessionToken(
   }
 }
 
-/** Demo credentials — replace with real DB lookup in production */
+/** Read session user from a Cookie header value or raw cookie string map. */
+export async function getSessionUserFromCookieHeader(
+  cookieHeader: string | null | undefined
+): Promise<SessionUser | null> {
+  if (!cookieHeader) return null;
+  const parts = cookieHeader.split(";").map((p) => p.trim());
+  const match = parts.find((p) => p.startsWith(`${SESSION_COOKIE}=`));
+  if (!match) return null;
+  const token = match.slice(SESSION_COOKIE.length + 1);
+  if (!token) return null;
+  return verifySessionToken(token);
+}
+
+export function isAdminRole(role: string | undefined | null): boolean {
+  return role === "ADMIN" || role === "SUPER_ADMIN";
+}
+
+/**
+ * Resolve admin session from a request-like object with cookies.get or headers.
+ * Returns null when unauthenticated or not an admin.
+ */
+export async function requireAdminSession(input: {
+  cookies?: { get: (name: string) => { value: string } | undefined };
+  headers?: { get: (name: string) => string | null };
+}): Promise<SessionUser | null> {
+  let token: string | undefined;
+  if (input.cookies?.get) {
+    token = input.cookies.get(SESSION_COOKIE)?.value;
+  }
+  if (!token && input.headers?.get) {
+    const user = await getSessionUserFromCookieHeader(
+      input.headers.get("cookie")
+    );
+    if (user && isAdminRole(user.role)) return user;
+    return null;
+  }
+  if (!token) return null;
+  const user = await verifySessionToken(token);
+  if (!user || !isAdminRole(user.role)) return null;
+  return user;
+}
+
+/** Demo credentials for local development only. Production requires env vars. */
 export async function authenticateAdmin(
   email: string,
   password: string
 ): Promise<SessionUser | null> {
-  const adminEmail = process.env.ADMIN_EMAIL || "admin@eclatbytuba.com";
-  const adminPassword = process.env.ADMIN_PASSWORD || "eclat2026";
+  const adminEmail = process.env.ADMIN_EMAIL?.trim();
+  const adminPassword = process.env.ADMIN_PASSWORD?.trim();
 
-  if (email === adminEmail && password === adminPassword) {
+  if (process.env.NODE_ENV === "production") {
+    if (!adminEmail || !adminPassword) {
+      console.error("ADMIN_EMAIL and ADMIN_PASSWORD must be set in production");
+      return null;
+    }
+  }
+
+  const expectedEmail = adminEmail || "admin@eclatbytuba.com";
+  const expectedPassword = adminPassword || "eclat2026";
+
+  if (email === expectedEmail && password === expectedPassword) {
     return {
       id: "admin-1",
-      email: adminEmail,
+      email: expectedEmail,
       name: "Admin",
       role: "SUPER_ADMIN",
     };
