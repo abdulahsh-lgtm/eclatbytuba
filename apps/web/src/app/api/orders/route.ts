@@ -3,6 +3,7 @@ import { getOrders, createOrder, CheckoutError } from "@eclat/db";
 import { requireAdminSession } from "@eclat/auth";
 import { rateLimit, RATE_LIMITS, clientKey } from "@eclat/config";
 import { sendOrderConfirmation } from "@eclat/emails";
+import { getPublicSettings } from "@eclat/db";
 
 /** List all orders - admin session required. */
 export async function GET(req: NextRequest) {
@@ -47,6 +48,23 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
+    const paymentMethod = typeof body.paymentMethod === "string" ? body.paymentMethod : "cod";
+    const paymentSettingKey: Record<string, string> = {
+      cod: "cod",
+      bank_transfer: "bank",
+      jazzcash: "jazzcash",
+      easypaisa: "easypaisa",
+      custom_gateway: "customGateway",
+    };
+    const settingKey = paymentSettingKey[paymentMethod];
+    const publicSettings = getPublicSettings();
+    const configuredMethods = publicSettings.payments as Record<string, { enabled?: boolean }>;
+    if (!settingKey || configuredMethods[settingKey]?.enabled !== true) {
+      return NextResponse.json(
+        { error: "Selected payment method is unavailable" },
+        { status: 400 }
+      );
+    }
 
     if (!body.email || !body.items?.length) {
       return NextResponse.json(
@@ -70,7 +88,7 @@ export async function POST(req: NextRequest) {
         quantity: i.quantity,
         variantId: i.variantId,
       })),
-      paymentMethod: body.paymentMethod || "cod",
+      paymentMethod,
       shippingMethod:
         body.shippingMethod || body.shippingAddress?.shippingMethod,
       idempotencyKey: body.idempotencyKey || body.idempotency_key || null,
@@ -81,7 +99,7 @@ export async function POST(req: NextRequest) {
         to: body.email,
         orderNumber: (order as any).orderNumber,
         total: Number((order as any).total),
-        paymentMethod: body.paymentMethod || "cod",
+        paymentMethod,
       });
     } catch (emailErr) {
       console.warn("Order email skipped:", emailErr);
