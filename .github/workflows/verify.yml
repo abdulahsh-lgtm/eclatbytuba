@@ -16,9 +16,25 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    container:
+      image: node:20-bookworm
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: eclat_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d eclat_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     timeout-minutes: 25
     env:
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/eclat_ci
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/eclat_ci
       AUTH_SECRET: ci-only-secret-not-for-production
       NEXTAUTH_SECRET: ci-only-secret-not-for-production
       ADMIN_EMAIL: ci-admin@example.test
@@ -38,6 +54,8 @@ jobs:
         run: pnpm install --no-frozen-lockfile
       - name: Validate Prisma schema
         run: pnpm --filter @eclat/db exec prisma validate --schema prisma/schema.prisma
+      - name: Create CI database schema
+        run: pnpm --filter @eclat/db db:push
       - name: Run auth security tests
         run: pnpm --filter @eclat/auth test:security
       - name: Run checkout and payment security tests
