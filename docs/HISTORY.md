@@ -7,7 +7,7 @@
 **What**
 - Added the missing unique optional `Order.idempotencyKey` field to Prisma schema and an additive migration.
 - Sent the checkout idempotency key with order requests and persisted it in session storage for safe retry after a lost response.
-- Preserved selected `variantId` in checkout requests.
+- Preserved selected `variantId` in checkout requests and added a regression test for keeping variant lines separate.
 - Added an allowlist for supported checkout payment method values.
 - Validated cart localStorage entries and capped client-side quantities to avoid malformed stored data breaking cart rendering.
 - Updated PROJECT_PLAN.md and PHASES_STATUS.md with findings and future-phase checks.
