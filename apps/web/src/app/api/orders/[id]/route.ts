@@ -59,8 +59,8 @@ export async function PATCH(
     }
 
     const order = await updateOrderStatus(params.id, update.status, {
-      notes: update.notes as string | null | undefined,
-      trackingNumber: update.trackingNumber as string | null | undefined,
+      notes: update.notes === null ? "" : (update.notes as string | undefined),
+      trackingNumber: update.trackingNumber === null ? "" : (update.trackingNumber as string | undefined),
     });
     if (!order) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
