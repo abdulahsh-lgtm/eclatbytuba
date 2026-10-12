@@ -2,6 +2,20 @@
 
 ---
 
+## 2026-10-13 — Fail closed for unfinished online checkout and add CI
+
+**What**
+- Hid the unfinished online card option in checkout.
+- Made the orders API reject custom_gateway orders until the provider is integrated end to end, avoiding false payment instructions.
+- Added a GitHub Actions workflow for Prisma schema validation, auth/checkout/payment security tests, and storefront/admin builds.
+
+**Verification**
+- Source edits pushed to the working branch.
+- The workflow was just added; no run result is available yet.
+- Runtime tests, builds, migrations, and deployment remain unverified. No database migration was applied.
+
+---
+
 ## 2026-10-13 — Payment access proof and retry recovery
 
 **What**
