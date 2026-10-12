@@ -63,13 +63,13 @@ const DEFAULTS: StoreSettings = {
   payments: {
     cod: { enabled: true },
     bank: {
-      enabled: true,
+      enabled: false,
       accountName: "",
       accountNumber: "",
       bankName: "",
     },
-    jazzcash: { enabled: true, merchantId: "", password: "" },
-    easypaisa: { enabled: true, storeId: "", accountNumber: "" },
+    jazzcash: { enabled: false, merchantId: "", password: "" },
+    easypaisa: { enabled: false, storeId: "", accountNumber: "" },
     customGateway: {
       enabled: false,
       providerName: "",
