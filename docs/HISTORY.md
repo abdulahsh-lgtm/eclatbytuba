@@ -2,6 +2,27 @@
 
 ---
 
+## 2026-10-13 — Phase 3 cart and checkout audit
+
+**What**
+- Added the missing unique optional `Order.idempotencyKey` field to Prisma schema and an additive migration.
+- Sent the checkout idempotency key with order requests and persisted it in session storage for safe retry after a lost response.
+- Preserved selected `variantId` in checkout requests.
+- Added an allowlist for supported checkout payment method values.
+- Validated cart localStorage entries and capped client-side quantities to avoid malformed stored data breaking cart rendering.
+- Updated PROJECT_PLAN.md and PHASES_STATUS.md with findings and future-phase checks.
+
+**Open**
+- Migration is not applied or runtime-validated. The repo still lacks a verified baseline migration path and lockfile.
+- PaymentIntent ownership proof, durable payment-method settings, database-backed tests, typecheck, and builds remain open.
+- No deployment or production database changes were made.
+
+**Verification**
+- Remote source review confirms the edits are present on the working branch.
+- Runtime tests and build checks have not been run in this environment.
+
+---
+
 ## 2026-10-13 — Persistent phase tracking and Phase 3 carry-forward
 
 **What**
