@@ -2,6 +2,19 @@
 
 ---
 
+## 2026-10-13 — Persistent phase tracking and Phase 3 carry-forward
+
+**What**
+- Added the verification ledger, security follow-up gates, and future-phase review checklist to the existing PROJECT_PLAN.md, following the repo rule against extra plan files.
+- Updated PHASES_STATUS.md to distinguish implementation reported in the repository from checks that have actually been verified.
+- Recorded Phase 3 cart, checkout, order privacy, local payment, inventory, email, and admin fulfillment checks as the next product-phase audit.
+
+**Verification**
+- Confirmed the updated plan and status files are committed on the working branch.
+- No runtime test/build result is implied by this documentation change. Phase 1/2 security verification remains open and deployment remains blocked.
+
+---
+
 ## 2026-10-13 — Payment retry and webhook transaction fixes
 
 **What**
