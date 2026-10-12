@@ -8,6 +8,7 @@
 - Added short-lived signed checkout payment tokens bound to an order ID. The order API returns one only for custom_gateway checkout, and create-intent rejects missing or mismatched tokens.
 - Restricted create-intent to orders whose stored payment method is custom_gateway.
 - Kept Stripe disabled in production unless `STRIPE_PAYMENTS_ENABLED=true` is explicitly configured, since it is not the store's configured Pakistan gateway.
+- Confirmed the current checkout page does not call create-intent; real Pakistan provider integration remains open and must not be reported as complete.
 - Added a new stable Stripe idempotency key for canceled PaymentIntent retries.
 - Added retry attachment logic for failed payment records in both database-backed and in-memory paths.
 - Added source-level tests for token tampering and failed-payment retry attachment.
