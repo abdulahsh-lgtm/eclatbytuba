@@ -106,6 +106,19 @@ async function main() {
     assert.equal(lines[0].quantity, 5);
   });
 
+  await test("keep different variants as separate checkout lines", () => {
+    const lines = normalizeCheckoutItems([
+      { productId: "p1", variantId: "v1", quantity: 1 },
+      { productId: "p1", variantId: "v2", quantity: 2 },
+      { productId: "p1", quantity: 1 },
+    ]);
+    assert.equal(lines.length, 3);
+    assert.deepEqual(
+      lines.map((line) => line.variantId),
+      ["v1", "v2", null]
+    );
+  });
+
   await test("idempotency key validation", () => {
     assert.equal(normalizeIdempotencyKey(null), null);
     assert.throws(() => normalizeIdempotencyKey("short"), CheckoutError);
