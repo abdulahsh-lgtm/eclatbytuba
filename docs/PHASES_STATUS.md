@@ -20,7 +20,7 @@
 |---------|----------------|
 | Checkout request omitted idempotency key | Fixed in working branch; tests still required |
 | Prisma Order schema omitted the idempotencyKey field used by data.ts | Schema field and additive migration added on working branch; migration not applied or runtime-validated |
-| Checkout request omitted selected variantId | Fixed in working branch; test coverage pending |
+| Checkout request omitted selected variantId | Fixed in working branch; regression test added but not run |
 | Orders API accepted arbitrary payment-method strings | Supported-method allowlist added; server-side enabled-state enforcement waits on persistent settings |
 | Cart localStorage was trusted after JSON parsing | Stored cart shape/quantities now validated; UI regression test pending |
 | PaymentIntent endpoint can be called using an order ID without ownership proof | Open security blocker |
