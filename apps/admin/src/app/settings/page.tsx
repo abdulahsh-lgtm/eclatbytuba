@@ -119,8 +119,8 @@ export default function SettingsPage() {
           Payment methods
         </h2>
         <p className="text-xs text-[#6B5E62] mb-3">
-          COD + JazzCash + EasyPaisa + bank are primary. Connect any PK gateway
-          under “Pakistan payment gateway”. Stripe is optional placeholder only.
+          Cash on delivery is the only active checkout method right now. Other
+          payment methods stay disabled until their provider flow is integrated and tested.
         </p>
         <div className="space-y-3">
           {paymentIds.map((id) => (
@@ -130,6 +130,7 @@ export default function SettingsPage() {
             >
               <input
                 type="checkbox"
+                disabled={id !== "cod"}
                 checked={(settings.payments as any)[id]?.enabled ?? false}
                 onChange={(e) =>
                   setSettings({
