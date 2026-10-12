@@ -73,7 +73,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }, [items, hydrated]);
 
-  const addItem = (item: Omit<CartItem, "quantity"> & { quantity?: number }) => {
+  const addItem = (item: Omit<CartItem, "id" | "quantity"> & { id?: string; quantity?: number }) => {
     setItems((prev) => {
       const variantId = item.variantId ?? null;
       const requestedQuantity =
