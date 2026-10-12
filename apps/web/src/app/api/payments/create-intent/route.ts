@@ -108,7 +108,15 @@ export async function POST(req: NextRequest) {
 
     // A canceled intent cannot be reused. Use a new stable key for the next attempt.
     const existingId = await getExistingPaymentIntentId(orderId);
-    let createIdempotencyKey = `eclat-order-payment-${orderId}`;
+    const failedPayment = (order as any).payments?.find(
+      (payment: any) =>
+        payment.status === "FAILED" &&
+        typeof payment.transactionId === "string" &&
+        payment.transactionId.startsWith("pi_")
+    );
+    let createIdempotencyKey = failedPayment
+      ? `eclat-order-payment-${orderId}-retry-${failedPayment.transactionId}`
+      : `eclat-order-payment-${orderId}`;
     if (existingId) {
       try {
         const existing = await stripe.paymentIntents.retrieve(existingId);
