@@ -6,7 +6,7 @@
 
 **What**
 - Restored the complete historical database data layer on main and added order-status transition guards.
-- Declared the Stripe SDK dependency used by the existing payment routes.
+- Declared the Stripe SDK and auth workspace dependencies used by the existing API routes.
 - Added checkout, payment, order-status, admin API, and authentication security test files, plus the combined database security test script.
 - Protected admin settings reads/updates, review moderation/listing, analytics summaries, product management, and image uploads with the existing admin session helper.
 
