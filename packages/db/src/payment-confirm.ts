@@ -189,19 +189,39 @@ export async function attachPaymentIntentDb(
   paymentIntentId: string
 ): Promise<void> {
   const { prisma } = await import("./index");
-  const updated = await prisma.payment.updateMany({
-    where: { orderId, status: "PENDING" },
-    data: { transactionId: paymentIntentId },
-  });
-  if (updated.count === 0) {
-    const existing = await prisma.payment.findFirst({
+  await prisma.$transaction(async (tx: any) => {
+    const updated = await tx.payment.updateMany({
+      where: { orderId, status: "PENDING" },
+      data: { transactionId: paymentIntentId },
+    });
+    if (updated.count > 0) return;
+
+    const existing = await tx.payment.findFirst({
       where: { orderId, transactionId: paymentIntentId },
       select: { id: true },
     });
-    if (!existing) {
+    if (existing) return;
+
+    // A failed payment may be retried. Reuse its payment row only after a new
+    // PaymentIntent has been created and is ready to attach.
+    const failed = await tx.payment.findFirst({
+      where: { orderId, status: "FAILED" },
+      orderBy: { createdAt: "desc" },
+      select: { id: true },
+    });
+    if (!failed) {
       throw new Error("No pending payment was available for PaymentIntent attachment.");
     }
-  }
+
+    await tx.payment.update({
+      where: { id: failed.id },
+      data: { status: "PENDING", transactionId: paymentIntentId },
+    });
+    await tx.order.update({
+      where: { id: orderId },
+      data: { paymentStatus: "PENDING" },
+    });
+  });
 }
 
 export async function getExistingPaymentIntentIdDb(
