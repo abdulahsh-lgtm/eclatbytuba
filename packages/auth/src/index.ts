@@ -3,12 +3,17 @@ import { SignJWT, jwtVerify } from "jose";
 function resolveAuthSecret(): string {
   const secret =
     process.env.NEXTAUTH_SECRET?.trim() || process.env.AUTH_SECRET?.trim();
-  if (secret) return secret;
   if (process.env.NODE_ENV === "production") {
-    throw new Error(
-      "NEXTAUTH_SECRET or AUTH_SECRET must be set in production"
-    );
+    if (!secret || secret.length < 32) {
+      throw new Error(
+        "A production NEXTAUTH_SECRET or AUTH_SECRET of at least 32 characters is required"
+      );
+    }
+    if (secret === "eclat-dev-secret-change-me") {
+      throw new Error("The development auth secret cannot be used in production");
+    }
   }
+  if (secret) return secret;
   return "eclat-dev-secret-change-me";
 }
 
@@ -124,6 +129,10 @@ export async function authenticateAdmin(
   if (process.env.NODE_ENV === "production") {
     if (!adminEmail || !adminPassword) {
       console.error("ADMIN_EMAIL and ADMIN_PASSWORD must be set in production");
+      return null;
+    }
+    if (adminPassword.length < 16 || adminPassword === "eclat2026") {
+      console.error("Production admin password must be changed from the demo value and contain at least 16 characters");
       return null;
     }
   }
