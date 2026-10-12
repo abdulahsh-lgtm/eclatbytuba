@@ -52,6 +52,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Stripe is not the configured Pakistan gateway. Keep production disabled
+    // unless the owner explicitly enables this separate integration.
+    if (
+      process.env.NODE_ENV === "production" &&
+      process.env.STRIPE_PAYMENTS_ENABLED !== "true"
+    ) {
+      return NextResponse.json(
+        { error: "Stripe payments are not enabled for this store" },
+        { status: 503 }
+      );
+    }
+
     const status = String((order as any).status || "");
     const paymentStatus = String((order as any).paymentStatus || "");
 
