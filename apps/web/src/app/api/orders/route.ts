@@ -48,10 +48,14 @@ export async function POST(req: NextRequest) {
 
     const body: unknown = await req.json().catch(() => null);
     if (!body || typeof body !== "object" || Array.isArray(body)) {
-      return NextResponse.json({ error: "Invalid checkout request" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid checkout request" },
+        { status: 400 }
+      );
     }
     const checkout = body as Record<string, any>;
-    const paymentMethod = typeof checkout.paymentMethod === "string" ? checkout.paymentMethod : "cod";
+    const paymentMethod =
+      typeof checkout.paymentMethod === "string" ? checkout.paymentMethod : "cod";
     const supportedPaymentMethods = new Set([
       "cod",
       "bank_transfer",
@@ -70,12 +74,19 @@ export async function POST(req: NextRequest) {
     // Do not create an order that tells the customer to pay through a dead flow.
     if (paymentMethod === "custom_gateway") {
       return NextResponse.json(
-        { error: "Online payment is temporarily unavailable. Please choose another method." },
+        {
+          error: "Online payment is temporarily unavailable. Please choose another method.",
+        },
         { status: 503 }
       );
     }
 
-    if (!checkout.email || !body.items?.length) {
+    if (
+      typeof checkout.email !== "string" ||
+      !checkout.email.trim() ||
+      !Array.isArray(checkout.items) ||
+      checkout.items.length === 0
+    ) {
       return NextResponse.json(
         { error: "email and items are required" },
         { status: 400 }
