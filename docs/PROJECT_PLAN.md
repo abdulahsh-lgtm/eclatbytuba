@@ -41,7 +41,7 @@ The product phases below are the numbered phases in this plan. Security remediat
 - [x] Add stable Stripe PaymentIntent idempotency key and fail the request if attachment fails.
 - [x] Move webhook event ledger writes into the payment transaction after validation/state updates.
 - [x] Persist failed payment state on the order and reject invalid payment-record attachment.
-- [ ] Run checkout and payment tests in a clean install.
+- [x] Run checkout and payment tests in CI after dependency installation (workflow run 38307515126 succeeded).
 - [ ] Add/verify tests for database transaction rollback on invalid amount/currency and duplicate webhook event.
 - [ ] Verify PaymentIntent reuse, attachment failure/retry, canceled-intent retry, and payment-failure-to-success retry against the database layer.
 - [ ] Run typecheck, Prisma schema/migration validation, and production builds for web/admin.
@@ -84,7 +84,7 @@ Apply these checks to every phase before moving on:
 - [ ] Wire the selected Pakistan payment provider into checkout. Current checkout does not call create-intent, and custom_gateway is not a completed payment integration; never mark an order PAID without verified provider confirmation.
 - [x] Hide the unfinished online payment option in checkout and reject custom_gateway orders at the API until the provider is integrated end to end.
 - [x] Add GitHub Actions verification workflow for Prisma validation, auth/checkout/payment security tests, and storefront/admin builds.
-- [ ] Review the first GitHub Actions run and fix any failing tests, type errors, or build errors before marking verification complete.
+- [x] Review the first database-backed GitHub Actions run; fixed the cart item ID type error and confirmed the latest workflow succeeds (run 38307515126).
 - [ ] Audit duplicate order submission, inventory race conditions, order confirmation email failure, and safe retry behavior with database-backed tests.
 - [ ] Audit admin order listing/status transitions and fulfillment flow end to end.
 - [ ] Run checkout security tests, typecheck, Prisma validation, web/admin builds, and test the order flow on mobile.
