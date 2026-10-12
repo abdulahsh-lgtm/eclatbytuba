@@ -27,6 +27,10 @@ export {
   getOrderById,
   createOrder,
   updateOrderStatus,
+  confirmOrderPaid,
+  markPaymentFailed,
+  attachPaymentIntent,
+  getExistingPaymentIntentId,
   getDashboardStats,
   getProductReviews,
   getReviewStats,
@@ -34,6 +38,31 @@ export {
   createReview,
   moderateReview,
 } from "./data";
+
+export {
+  CheckoutError,
+  validateEmail,
+  validateQuantity,
+  normalizeCheckoutItems,
+  computeLineTotal,
+  computeOrderTotals,
+  generateOrderNumber,
+  normalizeIdempotencyKey,
+  assertFinancialInvariants,
+} from "./checkout";
+
+export {
+  canTransitionPayment,
+  isOrderPayable,
+  canMarkOrderPaid,
+  canMarkPaymentFailed,
+  canTransitionOrder,
+  assertOrderStatusTransition,
+  PAYMENT_TRANSITIONS,
+  ORDER_PAYABLE_STATUSES,
+  ORDER_TRANSITIONS,
+} from "./payment-state";
+export type { PaymentStatusValue, OrderStatusValue } from "./payment-state";
 
 export {
   recordHit,
