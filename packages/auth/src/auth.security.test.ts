@@ -3,6 +3,8 @@
  */
 import {
   authenticateAdmin,
+  createOrderPaymentToken,
+  verifyOrderPaymentToken,
   createSessionToken,
   verifySessionToken,
   requireAdminSession,
@@ -76,6 +78,23 @@ async function main() {
       delete process.env.ADMIN_PASSWORD;
       const user = await authenticateAdmin("admin@eclatbytuba.com", "eclat2026");
       assert(user?.role === "SUPER_ADMIN", "demo admin");
+    });
+
+    await test("checkout payment token is bound to its order and rejects tampering", async () => {
+      process.env.AUTH_SECRET = "payment-token-test-secret";
+      const token = await createOrderPaymentToken("order-123");
+      assert(
+        (await verifyOrderPaymentToken(token)) === "order-123",
+        "valid token should return its bound order"
+      );
+      assert(
+        (await verifyOrderPaymentToken(token + "tampered")) === null,
+        "tampered token should be rejected"
+      );
+      assert(
+        (await verifyOrderPaymentToken("")) === null,
+        "empty token should be rejected"
+      );
     });
 
     await test("session token round-trip", async () => {
