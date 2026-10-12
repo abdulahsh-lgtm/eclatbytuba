@@ -85,6 +85,8 @@ Apply these checks to every phase before moving on:
 - [x] Hide the unfinished online payment option in checkout and reject custom_gateway orders at the API until the provider is integrated end to end.
 - [x] Add GitHub Actions verification workflow for Prisma validation, auth/checkout/payment security tests, and storefront/admin builds.
 - [x] Review the first database-backed GitHub Actions run; fixed the cart item ID type error and confirmed the latest workflow succeeds (run 38307515126).
+- [x] Add storefront, admin, and database-package TypeScript checks to the existing CI workflow; fresh run required for the expanded workflow.
+- [x] Validate admin order status update payloads, cap notes/tracking fields, return 400 for malformed JSON and invalid transitions, and normalize empty fields so the admin form can clear them.
 - [ ] Audit duplicate order submission, inventory race conditions, order confirmation email failure, and safe retry behavior with database-backed tests.
 - [ ] Audit admin order listing/status transitions and fulfillment flow end to end.
 - [ ] Run checkout security tests, typecheck, Prisma validation, web/admin builds, and test the order flow on mobile.
