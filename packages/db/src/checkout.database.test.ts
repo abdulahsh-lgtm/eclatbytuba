@@ -6,6 +6,7 @@
 import assert from "node:assert/strict";
 import { createOrder } from "./data";
 import { prisma } from "./index";
+import { getPublicSettingsPersistent, updateSettingsPersistent } from "./settings-store";
 
 if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL is required for checkout database tests");
@@ -17,6 +18,7 @@ if (process.env.ALLOW_IN_MEMORY === "1") {
 const suffix = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 const emailPrefix = `checkout_db_${suffix}`;
 const productIds: string[] = [];
+const originalSetting = await prisma.setting.findUnique({ where: { key: "store" } });
 
 async function createTestProduct(inventory: number) {
   const product = await prisma.product.create({
@@ -53,6 +55,16 @@ function orderInput(productId: string, email: string, idempotencyKey: string) {
 
 async function main() {
   try {
+    await updateSettingsPersistent({ payments: { cod: { enabled: false } } });
+    const persistedSettings = await getPublicSettingsPersistent();
+    assert.equal(persistedSettings.payments.cod.enabled, false);
+    assert.equal(
+      "password" in (persistedSettings.payments.jazzcash as any),
+      false,
+      "public settings must not expose wallet credentials"
+    );
+    console.log("PASS - store settings persist in PostgreSQL and public responses omit secrets");
+
     const idempotentProduct = await createTestProduct(5);
     const idempotentEmail = `${emailPrefix}_same@example.test`;
     const idempotencyKey = `same_${suffix}`;
@@ -99,6 +111,15 @@ async function main() {
     await prisma.order.deleteMany({ where: { email: { startsWith: emailPrefix } } });
     if (productIds.length) {
       await prisma.product.deleteMany({ where: { id: { in: productIds } } });
+    }
+    if (originalSetting) {
+      await prisma.setting.upsert({
+        where: { key: "store" },
+        create: { key: "store", value: originalSetting.value as any },
+        update: { value: originalSetting.value as any },
+      });
+    } else {
+      await prisma.setting.deleteMany({ where: { key: "store" } });
     }
     await prisma.$disconnect();
   }
