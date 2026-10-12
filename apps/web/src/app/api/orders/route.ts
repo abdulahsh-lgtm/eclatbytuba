@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getOrders, createOrder, CheckoutError } from "@eclat/db";
-import { createOrderPaymentToken, requireAdminSession } from "@eclat/auth";
+import { requireAdminSession } from "@eclat/auth";
 import { rateLimit, RATE_LIMITS, clientKey } from "@eclat/config";
 import { sendOrderConfirmation } from "@eclat/emails";
 
@@ -122,15 +122,7 @@ export async function POST(req: NextRequest) {
       console.warn("Order email skipped:", emailErr);
     }
 
-    const paymentToken =
-      paymentMethod === "custom_gateway"
-        ? await createOrderPaymentToken(String((order as any).id))
-        : undefined;
-
-    return NextResponse.json(
-      { order, ...(paymentToken ? { paymentToken } : {}) },
-      { status: 201 }
-    );
+    return NextResponse.json({ order }, { status: 201 });
   } catch (e: unknown) {
     if (e instanceof CheckoutError || (e as any)?.name === "CheckoutError") {
       const code = (e as CheckoutError).code;
