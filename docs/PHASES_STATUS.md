@@ -2,10 +2,29 @@
 
 **Theme:** Soft Gloss Pastel (LOCKED) · **Font:** Plus Jakarta Sans ONLY (LOCKED)
 
-| Phase | Name | Status |
-|-------|------|--------|
-| 0–7 | Foundation → SEO/AEO/PWA | ✅ |
-| 8 | Import 67 Products + Content + Launch | ✅ |
+| Phase | Name | Implementation status | Verification status |
+|-------|------|------------------------|---------------------|
+| 0 | Foundation + repo skeleton | Reported implemented | Runtime/build evidence not recorded here |
+| 1 | DB schema + auth + admin shell | Reported implemented | Admin route security tests/build need fresh run |
+| 2 | Product CRUD + media + grids | Reported implemented | CRUD, upload, mobile and regression checks need fresh run |
+| 3 | Cart + checkout + orders | Existing implementation present; audit in progress | Checkout/payment test run and order privacy review pending |
+| 4 | Advanced PDP + verified reviews | Reported implemented | Verified-buyer flow and PDP regression tests pending |
+| 5 | Analytics + pixels | Reported implemented | Event correctness, privacy and real dashboard checks pending |
+| 6 | Play element + settings | Reported implemented | Settings authorization and mobile UI checks pending |
+| 7 | SEO / AEO / PWA / security / performance | Reported implemented | Crawl, schema, accessibility, security and performance evidence pending |
+| 8 | Import 67 products + content + launch | Reported implemented | Catalog count, product details and build need fresh verification |
+
+## Active security follow-up (separate from product phase numbering)
+
+| Workstream | Status | Remaining evidence |
+|------------|--------|--------------------|
+| Security Phase 1: checkout and financial integrity | Implemented fixes present on working branch | Run checkout security tests, concurrency/idempotency checks, typecheck and build |
+| Security Phase 2: payment processing and Stripe webhooks | Retry/transaction fixes present on working branch | Run DB-backed tests, Stripe test-mode success/failure/replay/mismatch cases |
+| Reproducible install | Incomplete | Add/restore the correct pnpm lockfile and confirm clean install |
+| Customer payment endpoint ownership | Review pending | Verify a caller cannot obtain a client secret with only an order ID |
+| Production readiness | Not ready | Do not deploy until all release checks pass |
+
+Do not use a green status as proof of verification. Mark an item verified only when the command output, CI result, or manual test evidence is recorded in HISTORY.md.
 
 ## Post-plan launch work (not numbered phases)
 
