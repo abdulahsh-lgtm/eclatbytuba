@@ -102,27 +102,6 @@ const DEFAULTS: StoreSettings = {
 
 let store: StoreSettings = structuredClone(DEFAULTS);
 
-const SETTINGS_FIELDS: Record<string, Record<string, "boolean" | "string">> = {
-  payments: {
-    cod: "object",
-    bank: "object",
-    jazzcash: "object",
-    easypaisa: "object",
-    customGateway: "object",
-    stripe: "object",
-  } as any,
-  email: {
-    resendApiKey: "string",
-    fromEmail: "string",
-    fromName: "string",
-    orderConfirmation: "boolean",
-    shippingUpdate: "boolean",
-    reviewRequest: "boolean",
-  },
-  play: { enabled: "boolean", tipText: "string" },
-  pixels: { metaPixelId: "string", gaId: "string" },
-};
-
 const PAYMENT_FIELDS: Record<string, Record<string, "boolean" | "string">> = {
   cod: { enabled: "boolean" },
   bank: {
