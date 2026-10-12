@@ -7,6 +7,7 @@ import { NextRequest } from "next/server";
 import { createSessionToken } from "@eclat/auth";
 import { createOrder, getOrderById, prisma } from "@eclat/db";
 import { GET, PATCH } from "./route";
+import { POST as createOrderRoute } from "../route";
 
 if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL is required for admin order integration tests");
@@ -48,6 +49,24 @@ async function main() {
       idempotencyKey: `admin_fulfillment_${suffix}`,
     });
     orderId = String((order as any).id);
+
+    const malformedCheckout = await createOrderRoute(
+      new NextRequest("http://localhost:3000/api/orders", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: "{",
+      })
+    );
+    assert.equal(malformedCheckout.status, 400, "malformed checkout JSON must return 400");
+
+    const disabledWallet = await createOrderRoute(
+      new NextRequest("http://localhost:3000/api/orders", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ paymentMethod: "jazzcash" }),
+      })
+    );
+    assert.equal(disabledWallet.status, 503, "unintegrated wallet methods must fail closed");
 
     const token = await createSessionToken({
       id: "ci-admin",
