@@ -81,6 +81,7 @@ Apply these checks to every phase before moving on:
 - [x] Add a short-lived signed checkout token bound to the order ID; create-intent rejects requests without a matching valid token and rejects orders not using custom_gateway.
 - [ ] Add route-level tests for missing/invalid/expired/wrong-order tokens and confirm no client secret is returned.
 - [ ] Make payment method enablement authoritative on the server after settings persistence is database-backed. Current settings storage is in-memory, so do not claim durable enable/disable behavior.
+- [ ] Wire the selected Pakistan payment provider into checkout. Current checkout does not call create-intent, and custom_gateway is not a completed payment integration; never mark an order PAID without verified provider confirmation.
 - [ ] Audit duplicate order submission, inventory race conditions, order confirmation email failure, and safe retry behavior with database-backed tests.
 - [ ] Audit admin order listing/status transitions and fulfillment flow end to end.
 - [ ] Run checkout security tests, typecheck, Prisma validation, web/admin builds, and test the order flow on mobile.
