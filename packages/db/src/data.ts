@@ -512,9 +512,17 @@ export async function attachPaymentIntent(orderId: string, paymentIntentId: stri
     pending.transactionId = paymentIntentId;
     return;
   }
-  if (!order?.payments?.some((p: any) => p.transactionId === paymentIntentId)) {
-    throw new Error("No pending payment was available for PaymentIntent attachment.");
+  if (order?.payments?.some((p: any) => p.transactionId === paymentIntentId)) {
+    return;
   }
+  const failed = order?.payments?.find((p: any) => p.status === "FAILED");
+  if (failed) {
+    failed.status = "PENDING";
+    failed.transactionId = paymentIntentId;
+    order.paymentStatus = "PENDING";
+    return;
+  }
+  throw new Error("No pending payment was available for PaymentIntent attachment.");
 }
 
 export async function getExistingPaymentIntentId(orderId: string): Promise<string | null> {
