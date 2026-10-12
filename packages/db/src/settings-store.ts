@@ -1,10 +1,11 @@
 /**
  * Store settings — payments + email + play element
- * In-memory; Prisma Setting model when DATABASE_URL is live.
- * Secrets never returned on public GET.
+ * Persists through Prisma Setting when DATABASE_URL is configured.
+ * Unit tests can use the in-memory store. Public responses omit secrets.
  *
- * Pakistan-first payments:
- * - COD, Bank Transfer, JazzCash, EasyPaisa enabled by default
+ * Payment safety:
+ * - COD is enabled by default
+ * - Unintegrated transfer, wallet and gateway methods stay disabled
  * - Generic "customGateway" slot for any PK third-party provider (PayFast, PayPro, etc.)
  * - Stripe kept as disabled placeholder only (not available for most PK merchants)
  */

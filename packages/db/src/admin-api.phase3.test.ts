@@ -4,7 +4,7 @@
  *   ALLOW_IN_MEMORY=1 NODE_ENV=development npx tsx src/admin-api.phase3.test.ts
  */
 import assert from "node:assert/strict";
-import { getPublicSettings, getAdminSettings } from "./settings-store";
+import { getPublicSettings, getAdminSettings, updateSettings } from "./settings-store";
 import { assertOrderStatusTransition } from "./payment-state";
 
 let passed = 0;
@@ -32,6 +32,18 @@ test("public settings mask bank account", () => {
   const pub = getPublicSettings() as any;
   const num = pub.payments.bank.accountNumber || "";
   assert.ok(!num || num.startsWith("****") || num.length <= 4);
+});
+
+test("unintegrated payment methods remain disabled", () => {
+  const pub = getPublicSettings() as any;
+  assert.equal(pub.payments.bank.enabled, false);
+  assert.equal(pub.payments.jazzcash.enabled, false);
+  assert.equal(pub.payments.easypaisa.enabled, false);
+  assert.equal(pub.payments.customGateway.enabled, false);
+  assert.throws(
+    () => updateSettings({ payments: { jazzcash: { enabled: true } } as any }),
+    /cannot be enabled until the provider flow is integrated/
+  );
 });
 
 test("admin settings object exists (must not be served without auth)", () => {

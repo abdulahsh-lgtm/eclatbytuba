@@ -52,7 +52,8 @@ export async function PUT(request: NextRequest) {
       message.includes("settings") ||
       message.includes("Unknown ") ||
       message.includes("must be a ") ||
-      message.includes("is too long")
+      message.includes("is too long") ||
+      message.includes("cannot be enabled")
     ) {
       return NextResponse.json({ error: message }, { status: 400 });
     }
