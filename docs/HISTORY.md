@@ -2,6 +2,17 @@
 
 ---
 
+## 2026-10-13 — Keep CI runs focused
+
+**What**
+- Added per-branch workflow concurrency so newer commits cancel redundant older verification runs and the latest code gets the available runner.
+
+**Verification**
+- Previous CI runs passed Prisma validation and security tests but the storefront build exposed a cart type error, which was fixed.
+- The latest commit's verification result is pending.
+
+---
+
 ## 2026-10-13 — Fix cart add-item type and CI build environment
 
 **What**
