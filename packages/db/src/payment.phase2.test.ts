@@ -215,6 +215,33 @@ async function main() {
     assert.equal((order as any).paymentStatus, "PAID");
   });
 
+  await test("failed payment can be retried with a new PaymentIntent", async () => {
+    const order = await createOrder({
+      email: "phase2retry@test.com",
+      shippingAddress: {
+        fullName: "Test",
+        line1: "Street",
+        city: "Lahore",
+      },
+      items: [{ productId: product.id, quantity: 1 }],
+      paymentMethod: "custom_gateway",
+      idempotencyKey: `p2_retry_${Date.now()}`,
+    });
+    const oldIntentId = `pi_old_${Date.now()}`;
+    const newIntentId = `pi_new_${Date.now()}`;
+    const failed = await markPaymentFailed({
+      orderId: (order as any).id,
+      paymentIntentId: oldIntentId,
+    });
+    assert.equal(failed.ok, true);
+    assert.equal((order as any).paymentStatus, "FAILED");
+
+    await attachPaymentIntent((order as any).id, newIntentId);
+    assert.equal((order as any).paymentStatus, "PENDING");
+    assert.equal((order as any).payments[0].status, "PENDING");
+    assert.equal(await getExistingPaymentIntentId((order as any).id), newIntentId);
+  });
+
   await test("currency mismatch rejected", async () => {
     const order = await createOrder({
       email: "phase2cur@test.com",
