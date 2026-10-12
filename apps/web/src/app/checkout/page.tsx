@@ -102,10 +102,13 @@ export default function CheckoutPage() {
       .then((r) => r.json())
       .then((s) => {
         const p = s?.payments || {};
+        // Online card checkout is hidden until a real payment provider is
+        // integrated into this page. A setting alone must not imply payment works.
         const keys = ALL_PAYMENTS.filter(
           (opt) =>
-            p[opt.key]?.enabled === true ||
-            (opt.key === "cod" && p.cod?.enabled !== false)
+            opt.key !== "customGateway" &&
+            (p[opt.key]?.enabled === true ||
+              (opt.key === "cod" && p.cod?.enabled !== false))
         ).map((opt) => opt.key);
         const list = keys.length ? keys : ["cod"];
         setEnabledKeys(list);
