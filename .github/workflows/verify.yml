@@ -19,20 +19,6 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: eclat_ci
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres -d eclat_ci"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
     timeout-minutes: 25
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/eclat_ci
@@ -43,6 +29,21 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Start disposable PostgreSQL
+        run: |
+          docker run -d --name eclat-ci-postgres \
+            -e POSTGRES_USER=postgres \
+            -e POSTGRES_PASSWORD=postgres \
+            -e POSTGRES_DB=eclat_ci \
+            -p 5432:5432 postgres:16
+          for attempt in $(seq 1 30); do
+            if docker exec eclat-ci-postgres pg_isready -U postgres -d eclat_ci; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs eclat-ci-postgres
+          exit 1
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -101,3 +102,6 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "build: add pnpm lockfile and Prisma baseline"
           git push origin "HEAD:$GITHUB_REF_NAME"
+      - name: Stop disposable PostgreSQL
+        if: always()
+        run: docker rm -f eclat-ci-postgres || true
