@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getOrders, createOrder, CheckoutError, getPublicSettings } from "@eclat/db";
+import { getOrders, createOrder, CheckoutError } from "@eclat/db";
 import { requireAdminSession } from "@eclat/auth";
 import { rateLimit, RATE_LIMITS, clientKey } from "@eclat/config";
 import { sendOrderConfirmation } from "@eclat/emails";
@@ -48,19 +48,16 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const paymentMethod = typeof body.paymentMethod === "string" ? body.paymentMethod : "cod";
-    const paymentSettingKey: Record<string, string> = {
-      cod: "cod",
-      bank_transfer: "bank",
-      jazzcash: "jazzcash",
-      easypaisa: "easypaisa",
-      custom_gateway: "customGateway",
-    };
-    const settingKey = paymentSettingKey[paymentMethod];
-    const publicSettings = getPublicSettings();
-    const configuredMethods = publicSettings.payments as Record<string, { enabled?: boolean }>;
-    if (!settingKey || configuredMethods[settingKey]?.enabled !== true) {
+    const supportedPaymentMethods = new Set([
+      "cod",
+      "bank_transfer",
+      "jazzcash",
+      "easypaisa",
+      "custom_gateway",
+    ]);
+    if (!supportedPaymentMethods.has(paymentMethod)) {
       return NextResponse.json(
-        { error: "Selected payment method is unavailable" },
+        { error: "Selected payment method is invalid" },
         { status: 400 }
       );
     }
