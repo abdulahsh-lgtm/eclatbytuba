@@ -15,7 +15,8 @@
     "@eclat/ui": "workspace:*",
     "next": "^14.2.13",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "stripe": "^16.12.0"
   },
   "devDependencies": {
     "@types/node": "^20.16.5",
