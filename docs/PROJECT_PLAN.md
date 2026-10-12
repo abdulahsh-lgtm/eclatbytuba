@@ -68,13 +68,28 @@ Apply these checks to every phase before moving on:
 - [ ] Keep deployment, live migrations, and production credentials last, after all release gates pass.
 
 ### Next product phase: Phase 3 — Cart + Checkout + Orders
-- [ ] Audit cart persistence and quantity/variant behavior, including refresh and mobile.
-- [ ] Audit checkout server-authoritative price, shipping (Rs 250), discounts, totals, stock, and idempotency.
-- [ ] Audit COD and local payment options against the actual Pakistan payment plan; do not silently treat Stripe placeholder support as a live local gateway.
-- [ ] Audit duplicate order submission, inventory race conditions, order confirmation email failure, and safe retry behavior.
-- [ ] Audit customer access to order details and ensure private orders are not exposed by guessing an order ID.
-- [ ] Audit admin order listing/status transitions and fulfillment flow.
-- [ ] Add/fix tests, then record actual results before marking Phase 3 complete.
+
+**Audit findings and fixes on the working branch**
+- [x] Added the missing optional unique `Order.idempotencyKey` field to the Prisma schema and an additive migration.
+- [x] Checkout now sends a session-persisted idempotency key so a retry after a lost response can return the existing order instead of creating another.
+- [x] Checkout now includes `variantId` in the order request; previously the selected variant could be lost and the base product price used.
+- [x] Order API rejects unsupported payment-method values instead of persisting arbitrary strings.
+- [x] Cart hydration now validates stored JSON, rejects malformed entries, handles unavailable localStorage, and caps quantities at 100 in the client cart.
+- [ ] Review the migration against the actual database and resolve the missing baseline migration/history before applying it anywhere.
+- [ ] Audit customer access to payment intent creation; order ID alone must not be treated as proof of ownership.
+- [ ] Make payment method enablement authoritative on the server after settings persistence is database-backed. Current settings storage is in-memory, so do not claim durable enable/disable behavior.
+- [ ] Audit duplicate order submission, inventory race conditions, order confirmation email failure, and safe retry behavior with database-backed tests.
+- [ ] Audit admin order listing/status transitions and fulfillment flow end to end.
+- [ ] Run checkout security tests, typecheck, Prisma validation, web/admin builds, and test the order flow on mobile.
+- [ ] Record command output and manual test evidence before marking Phase 3 complete.
+
+### Carry-forward items for later phases
+- [ ] Phase 4: prove reviews require a real order for the same product and cannot be spoofed by submitting an arbitrary orderId.
+- [ ] Phase 5: verify analytics values come from trusted order data, consent/privacy expectations, duplicate event handling, and no PII leakage to pixels.
+- [ ] Phase 6: make settings durable in the database, enforce admin-only updates, never expose credentials in public responses, and test payment/email/play settings after refresh and across server instances.
+- [ ] Phase 7: verify security headers/CSP, rate limits, accessibility, mobile layout, Core Web Vitals, sitemap/schema validity, and all product metadata from source data.
+- [ ] Phase 8: verify catalog SKU count, variant inventory/pricing, product images, and every imported product against the approved catalog.
+- [ ] Release gate: verify lockfile/clean install, all migrations from a clean database, tests, typecheck, builds, secret configuration, Stripe/local payment sandbox, backup/rollback plan, and staging smoke tests. Deployment remains last.
 
 ---
 
