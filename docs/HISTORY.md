@@ -7,6 +7,7 @@
 **What**
 - Hid the unfinished online card option in checkout.
 - Made the orders API reject custom_gateway orders until the provider is integrated end to end, avoiding false payment instructions.
+- Removed the now-unreachable payment-token response from order creation; token helpers remain covered by auth tests for a future provider integration.
 - Added a GitHub Actions workflow for Prisma schema validation, auth/checkout/payment security tests, and storefront/admin builds.
 
 **Verification**
