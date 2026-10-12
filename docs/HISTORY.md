@@ -2,6 +2,18 @@
 
 ---
 
+## 2026-10-13 — Give CI builds a disposable database
+
+**What**
+- The storefront build needs a real database connection during prerendering. Updated CI to run in a container with a disposable PostgreSQL service and create its schema with Prisma before building.
+- Kept the production rule that rejects localhost database URLs unchanged.
+
+**Verification**
+- Prisma validation and security suites have passed in prior CI runs.
+- The updated database-backed build workflow is pending; migration history and production database migrations remain separate release gates.
+
+---
+
 ## 2026-10-13 — Keep CI runs focused
 
 **What**
