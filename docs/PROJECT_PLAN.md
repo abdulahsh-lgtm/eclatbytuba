@@ -43,11 +43,12 @@ The product phases below are the numbered phases in this plan. Security remediat
 - [x] Persist failed payment state on the order and reject invalid payment-record attachment.
 - [ ] Run checkout and payment tests in a clean install.
 - [ ] Add/verify tests for database transaction rollback on invalid amount/currency and duplicate webhook event.
-- [ ] Verify PaymentIntent reuse, attachment failure/retry, and payment-failure-to-success retry against the database layer.
+- [ ] Verify PaymentIntent reuse, attachment failure/retry, canceled-intent retry, and payment-failure-to-success retry against the database layer.
 - [ ] Run typecheck, Prisma schema/migration validation, and production builds for web/admin.
 - [ ] Verify a Stripe test-mode success, failure, duplicate webhook delivery, and mismatched amount/currency.
 - [ ] Resolve the missing pnpm lockfile and ensure clean, reproducible dependency installation.
-- [ ] Review the create-intent endpoint for anonymous order ownership/proof so knowing an order ID alone is not enough to retrieve a client secret.
+- [x] Require a short-lived signed order-bound token for create-intent; issue it only for custom_gateway checkout responses.
+- [ ] Run route tests proving missing, invalid, expired, and wrong-order tokens never return a client secret.
 - [ ] Confirm no production path enables in-memory/mock payment behavior.
 - [ ] Do not mark security work complete until each applicable checkbox has test output or documented reason/evidence.
 
@@ -76,7 +77,8 @@ Apply these checks to every phase before moving on:
 - [x] Order API rejects unsupported payment-method values instead of persisting arbitrary strings.
 - [x] Cart hydration now validates stored JSON, rejects malformed entries, handles unavailable localStorage, and caps quantities at 100 in the client cart.
 - [ ] Review the migration against the actual database and resolve the missing baseline migration/history before applying it anywhere.
-- [ ] Audit customer access to payment intent creation; order ID alone must not be treated as proof of ownership.
+- [x] Add a short-lived signed checkout token bound to the order ID; create-intent rejects requests without a matching valid token and rejects orders not using custom_gateway.
+- [ ] Add route-level tests for missing/invalid/expired/wrong-order tokens and confirm no client secret is returned.
 - [ ] Make payment method enablement authoritative on the server after settings persistence is database-backed. Current settings storage is in-memory, so do not claim durable enable/disable behavior.
 - [ ] Audit duplicate order submission, inventory race conditions, order confirmation email failure, and safe retry behavior with database-backed tests.
 - [ ] Audit admin order listing/status transitions and fulfillment flow end to end.
