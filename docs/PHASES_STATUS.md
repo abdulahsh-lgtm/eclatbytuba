@@ -7,12 +7,24 @@
 | 0 | Foundation + repo skeleton | Reported implemented | Runtime/build evidence not recorded here |
 | 1 | DB schema + auth + admin shell | Reported implemented | Admin route security tests/build need fresh run |
 | 2 | Product CRUD + media + grids | Reported implemented | CRUD, upload, mobile and regression checks need fresh run |
-| 3 | Cart + checkout + orders | Existing implementation present; audit in progress | Checkout/payment test run and order privacy review pending |
+| 3 | Cart + checkout + orders | Audit fixes added on working branch | Runtime tests, migration review, payment ownership, and end-to-end order flow pending |
 | 4 | Advanced PDP + verified reviews | Reported implemented | Verified-buyer flow and PDP regression tests pending |
 | 5 | Analytics + pixels | Reported implemented | Event correctness, privacy and real dashboard checks pending |
 | 6 | Play element + settings | Reported implemented | Settings authorization and mobile UI checks pending |
 | 7 | SEO / AEO / PWA / security / performance | Reported implemented | Crawl, schema, accessibility, security and performance evidence pending |
 | 8 | Import 67 products + content + launch | Reported implemented | Catalog count, product details and build need fresh verification |
+
+## Phase 3 audit notes
+
+| Finding | Current status |
+|---------|----------------|
+| Checkout request omitted idempotency key | Fixed in working branch; tests still required |
+| Prisma Order schema omitted the idempotencyKey field used by data.ts | Schema field and additive migration added on working branch; migration not applied or runtime-validated |
+| Checkout request omitted selected variantId | Fixed in working branch; test coverage pending |
+| Orders API accepted arbitrary payment-method strings | Supported-method allowlist added; server-side enabled-state enforcement waits on persistent settings |
+| Cart localStorage was trusted after JSON parsing | Stored cart shape/quantities now validated; UI regression test pending |
+| PaymentIntent endpoint can be called using an order ID without ownership proof | Open security blocker |
+| Settings persistence is in-memory rather than durable | Open follow-up for settings phase; do not rely on enable/disable values as durable production configuration |
 
 ## Active security follow-up (separate from product phase numbering)
 
