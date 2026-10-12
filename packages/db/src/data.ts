@@ -199,7 +199,8 @@ export async function createOrder(input: {
       const existing = await prisma.order.findUnique({ where: { idempotencyKey }, include: { items: true, payments: true } });
       if (existing) return existing;
     }
-    return await prisma.$transaction(async (tx: any) => {
+    try {
+      return await prisma.$transaction(async (tx: any) => {
       if (idempotencyKey) {
         const existing = await tx.order.findUnique({ where: { idempotencyKey }, include: { items: true, payments: true } });
         if (existing) return existing;
@@ -363,14 +364,13 @@ export async function createOrder(input: {
         } catch (err: any) {
           if (err?.code === "P2002") {
             const targets = err?.meta?.target || [];
-            if (targets.includes("idempotencyKey") && idempotencyKey) {
-              const existing = await tx.order.findUnique({
-                where: { idempotencyKey },
-                include: { items: true, payments: true },
-              });
-              if (existing) return existing;
+            const targetText = Array.isArray(targets) ? targets.join(" ") : String(targets);
+            if (idempotencyKey && targetText.includes("idempotencyKey")) {
+              // A unique-key violation aborts a PostgreSQL transaction. Resolve
+              // the winning order only after the transaction has rolled back.
+              throw err;
             }
-            if (targets.includes("orderNumber")) {
+            if (targetText.includes("orderNumber")) {
               orderNumber = generateOrderNumber();
               continue;
             }
@@ -379,7 +379,17 @@ export async function createOrder(input: {
         }
       }
       throw new CheckoutError("Could not create order", "CONFLICT");
-    });
+      });
+    } catch (err: any) {
+      if (idempotencyKey && err?.code === "P2002") {
+        const existing = await prisma.order.findUnique({
+          where: { idempotencyKey },
+          include: { items: true, payments: true },
+        });
+        if (existing) return existing;
+      }
+      throw err;
+    }
   }
 
   ensureMemSeed();
