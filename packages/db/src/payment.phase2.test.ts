@@ -105,7 +105,7 @@ async function main() {
   delete process.env.DATABASE_URL;
   process.env.NODE_ENV = "development";
 
-  const { createOrder, confirmOrderPaid, markPaymentFailed } = await import(
+  const { createOrder, confirmOrderPaid, markPaymentFailed, attachPaymentIntent, getExistingPaymentIntentId } = await import(
     "./data"
   );
   const { getProducts } = await import("./data");
@@ -229,6 +229,7 @@ async function main() {
     });
     const oldIntentId = `pi_old_${Date.now()}`;
     const newIntentId = `pi_new_${Date.now()}`;
+    await attachPaymentIntent((order as any).id, oldIntentId);
     const failed = await markPaymentFailed({
       orderId: (order as any).id,
       paymentIntentId: oldIntentId,
