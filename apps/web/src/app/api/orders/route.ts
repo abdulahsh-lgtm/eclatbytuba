@@ -54,8 +54,16 @@ export async function POST(req: NextRequest) {
       );
     }
     const checkout = body as Record<string, any>;
-    const paymentMethod =
-      typeof checkout.paymentMethod === "string" ? checkout.paymentMethod : "cod";
+    if (
+      checkout.paymentMethod !== undefined &&
+      (typeof checkout.paymentMethod !== "string" || !checkout.paymentMethod.trim())
+    ) {
+      return NextResponse.json(
+        { error: "Selected payment method is invalid" },
+        { status: 400 }
+      );
+    }
+    const paymentMethod = checkout.paymentMethod === undefined ? "cod" : checkout.paymentMethod;
     const supportedPaymentMethods = new Set([
       "cod",
       "bank_transfer",
@@ -90,6 +98,23 @@ export async function POST(req: NextRequest) {
     ) {
       return NextResponse.json(
         { error: "email and items are required" },
+        { status: 400 }
+      );
+    }
+    if (
+      checkout.items.some((item: unknown) => {
+        if (!item || typeof item !== "object" || Array.isArray(item)) return true;
+        const line = item as Record<string, unknown>;
+        return typeof line.productId !== "string" || !line.productId.trim() ||
+          typeof line.quantity !== "number" || !Number.isInteger(line.quantity);
+      }) ||
+      (checkout.phone !== undefined && checkout.phone !== null && typeof checkout.phone !== "string") ||
+      !checkout.shippingAddress ||
+      typeof checkout.shippingAddress !== "object" ||
+      Array.isArray(checkout.shippingAddress)
+    ) {
+      return NextResponse.json(
+        { error: "Checkout items, phone, or shipping address are invalid" },
         { status: 400 }
       );
     }
