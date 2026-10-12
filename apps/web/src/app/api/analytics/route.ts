@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { recordHit, summarizeAnalytics, getOrders } from "@eclat/db";
+import { requireAdminSession } from "@eclat/auth";
 
 export async function POST(req: NextRequest) {
   try {
@@ -34,6 +35,10 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
+  const admin = await requireAdminSession(req);
+  if (!admin) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   try {
     const days = Number(new URL(req.url).searchParams.get("days") || 30);
     const orders = await getOrders();
