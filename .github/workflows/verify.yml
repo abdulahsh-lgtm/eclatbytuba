@@ -14,7 +14,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
-      NODE_ENV: development
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/eclat_ci
       AUTH_SECRET: ci-only-secret-not-for-production
       NEXTAUTH_SECRET: ci-only-secret-not-for-production
