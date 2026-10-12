@@ -7,7 +7,7 @@ import {
 } from "@eclat/db";
 
 /**
- * Phase 2 — Create or reuse a Stripe PaymentIntent for an existing order.
+ * Phase 2: Create or reuse a Stripe PaymentIntent for an existing order.
  * Amount/currency always from persisted order. Never from client body.
  * Reuses an existing PENDING intent when present (avoids duplicate intents on retry).
  * Production fails closed without STRIPE_SECRET_KEY.
