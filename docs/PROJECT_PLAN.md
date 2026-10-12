@@ -82,6 +82,9 @@ Apply these checks to every phase before moving on:
 - [ ] Add route-level tests for missing/invalid/expired/wrong-order tokens and confirm no client secret is returned.
 - [ ] Make payment method enablement authoritative on the server after settings persistence is database-backed. Current settings storage is in-memory, so do not claim durable enable/disable behavior.
 - [ ] Wire the selected Pakistan payment provider into checkout. Current checkout does not call create-intent, and custom_gateway is not a completed payment integration; never mark an order PAID without verified provider confirmation.
+- [x] Hide the unfinished online payment option in checkout and reject custom_gateway orders at the API until the provider is integrated end to end.
+- [x] Add GitHub Actions verification workflow for Prisma validation, auth/checkout/payment security tests, and storefront/admin builds.
+- [ ] Review the first GitHub Actions run and fix any failing tests, type errors, or build errors before marking verification complete.
 - [ ] Audit duplicate order submission, inventory race conditions, order confirmation email failure, and safe retry behavior with database-backed tests.
 - [ ] Audit admin order listing/status transitions and fulfillment flow end to end.
 - [ ] Run checkout security tests, typecheck, Prisma validation, web/admin builds, and test the order flow on mobile.
