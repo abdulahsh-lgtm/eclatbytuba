@@ -18,30 +18,6 @@ export async function confirmOrderPaidDb(input: {
 
   try {
     return await prisma.$transaction(async (tx: any) => {
-      // Record event inside the same transaction so a failed confirm can roll back
-      // and Stripe retries are not short-circuited as already paid.
-      if (input.stripeEventId) {
-        try {
-          await tx.stripeWebhookEvent.create({
-            data: {
-              eventId: input.stripeEventId,
-              type: "payment_intent.succeeded",
-              orderId: input.orderId,
-              payloadMeta: {
-                paymentIntentId: input.paymentIntentId,
-                amountMinor: input.amountMinor,
-                currency: input.currency,
-              },
-            },
-          });
-        } catch (err: any) {
-          if (err?.code === "P2002") {
-            return { ok: true as const, alreadyPaid: true };
-          }
-          throw err;
-        }
-      }
-
       const order = await tx.order.findUnique({
         where: { id: input.orderId },
         include: { payments: true },
@@ -54,6 +30,25 @@ export async function confirmOrderPaidDb(input: {
       );
       if (!gate.ok) {
         if (gate.reason === "already_paid") {
+          if (input.stripeEventId) {
+            try {
+              await tx.stripeWebhookEvent.create({
+                data: {
+                  eventId: input.stripeEventId,
+                  type: "payment_intent.succeeded",
+                  orderId: input.orderId,
+                  payloadMeta: {
+                    paymentIntentId: input.paymentIntentId,
+                    amountMinor: input.amountMinor,
+                    currency: input.currency,
+                  },
+                },
+              });
+            } catch (err: any) {
+              if (err?.code === "P2002") throw new Error("DUPLICATE_STRIPE_EVENT");
+              throw err;
+            }
+          }
           return { ok: true as const, alreadyPaid: true };
         }
         return { ok: false as const, reason: gate.reason };
@@ -102,10 +97,30 @@ export async function confirmOrderPaidDb(input: {
         });
       }
 
+      if (input.stripeEventId) {
+        try {
+          await tx.stripeWebhookEvent.create({
+            data: {
+              eventId: input.stripeEventId,
+              type: "payment_intent.succeeded",
+              orderId: input.orderId,
+              payloadMeta: {
+                paymentIntentId: input.paymentIntentId,
+                amountMinor: input.amountMinor,
+                currency: input.currency,
+              },
+            },
+          });
+        } catch (err: any) {
+          if (err?.code === "P2002") throw new Error("DUPLICATE_STRIPE_EVENT");
+          throw err;
+        }
+      }
+
       return { ok: true as const };
     });
   } catch (err: any) {
-    if (err?.code === "P2002") {
+    if (err?.message === "DUPLICATE_STRIPE_EVENT") {
       return { ok: true, alreadyPaid: true };
     }
     throw err;
@@ -121,24 +136,6 @@ export async function markPaymentFailedDb(input: {
 
   try {
     return await prisma.$transaction(async (tx: any) => {
-      if (input.stripeEventId) {
-        try {
-          await tx.stripeWebhookEvent.create({
-            data: {
-              eventId: input.stripeEventId,
-              type: "payment_intent.payment_failed",
-              orderId: input.orderId,
-              payloadMeta: { paymentIntentId: input.paymentIntentId },
-            },
-          });
-        } catch (err: any) {
-          if (err?.code === "P2002") {
-            return { ok: true as const, skipped: true };
-          }
-          throw err;
-        }
-      }
-
       const order = await tx.order.findUnique({
         where: { id: input.orderId },
         include: { payments: true },
@@ -151,6 +148,10 @@ export async function markPaymentFailedDb(input: {
         return { ok: false as const, reason: "invalid_transition" };
       }
 
+      await tx.order.update({
+        where: { id: input.orderId },
+        data: { paymentStatus: "FAILED" },
+      });
       await tx.payment.updateMany({
         where: { orderId: input.orderId, status: "PENDING" },
         data: {
@@ -158,10 +159,25 @@ export async function markPaymentFailedDb(input: {
           transactionId: input.paymentIntentId,
         },
       });
+      if (input.stripeEventId) {
+        try {
+          await tx.stripeWebhookEvent.create({
+            data: {
+              eventId: input.stripeEventId,
+              type: "payment_intent.payment_failed",
+              orderId: input.orderId,
+              payloadMeta: { paymentIntentId: input.paymentIntentId },
+            },
+          });
+        } catch (err: any) {
+          if (err?.code === "P2002") throw new Error("DUPLICATE_STRIPE_EVENT");
+          throw err;
+        }
+      }
       return { ok: true as const };
     });
   } catch (err: any) {
-    if (err?.code === "P2002") {
+    if (err?.message === "DUPLICATE_STRIPE_EVENT") {
       return { ok: true, skipped: true };
     }
     throw err;
@@ -173,10 +189,19 @@ export async function attachPaymentIntentDb(
   paymentIntentId: string
 ): Promise<void> {
   const { prisma } = await import("./index");
-  await prisma.payment.updateMany({
+  const updated = await prisma.payment.updateMany({
     where: { orderId, status: "PENDING" },
     data: { transactionId: paymentIntentId },
   });
+  if (updated.count === 0) {
+    const existing = await prisma.payment.findFirst({
+      where: { orderId, transactionId: paymentIntentId },
+      select: { id: true },
+    });
+    if (!existing) {
+      throw new Error("No pending payment was available for PaymentIntent attachment.");
+    }
+  }
 }
 
 export async function getExistingPaymentIntentIdDb(
