@@ -60,6 +60,12 @@ jobs:
         run: pnpm --filter @eclat/auth test:security
       - name: Run checkout and payment security tests
         run: pnpm --filter @eclat/db test:security:all
+      - name: Typecheck storefront
+        run: pnpm --filter @eclat/web exec tsc --noEmit
+      - name: Typecheck admin
+        run: pnpm --filter @eclat/admin exec tsc --noEmit
+      - name: Typecheck database package
+        run: pnpm --filter @eclat/db exec tsc --noEmit
       - name: Build storefront
         run: pnpm --filter @eclat/web build
       - name: Build admin
