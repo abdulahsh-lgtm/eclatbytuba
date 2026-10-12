@@ -38,12 +38,17 @@ jobs:
             -p 5432:5432 postgres:16
           for attempt in $(seq 1 30); do
             if docker exec eclat-ci-postgres pg_isready -U postgres -d eclat_ci; then
-              exit 0
+              break
             fi
             sleep 2
           done
-          docker logs eclat-ci-postgres
-          exit 1
+          docker exec eclat-ci-postgres pg_isready -U postgres -d eclat_ci
+          DB_HOST="$(docker inspect --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' eclat-ci-postgres)"
+          if [ -z "$DB_HOST" ]; then
+            echo "Could not resolve the disposable PostgreSQL container IP"
+            exit 1
+          fi
+          echo "DATABASE_URL=postgresql://postgres:postgres@$DB_HOST:5432/eclat_ci" >> "$GITHUB_ENV"
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
