@@ -2,6 +2,20 @@
 
 ---
 
+## 2026-10-13 — Order update validation and CI typechecks
+
+**What**
+- Added TypeScript checks for the storefront, admin app, and database package to the existing verification workflow.
+- Hardened the admin order update API: malformed JSON and invalid payload shapes return HTTP 400, notes and tracking number types and lengths are checked, and invalid status transitions return HTTP 400 rather than a server error.
+- Normalized empty notes and tracking values so the admin form can clear previously saved values.
+
+**Verification**
+- The prior code state passed run 38308327307, including Prisma validation, CI database schema setup, auth and checkout/payment security tests, and both app builds.
+- A fresh run for the new typecheck steps and order update validation is pending. These new changes are not marked verified until that run completes.
+- No production migration, merge to main, or deployment was performed.
+
+---
+
 ## 2026-10-13 — Phase 3 checkout request validation and CI results
 
 **What**
