@@ -34,6 +34,27 @@ export async function createSessionToken(user: SessionUser): Promise<string> {
     .sign(SECRET());
 }
 
+/** Short-lived bearer token proving the caller received this checkout order response. */
+export async function createOrderPaymentToken(orderId: string): Promise<string> {
+  return new SignJWT({ orderId })
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt()
+    .setExpirationTime("1h")
+    .setAudience("eclat-order-payment")
+    .sign(SECRET());
+}
+
+/** Validate a checkout payment token and return its bound order ID. */
+export async function verifyOrderPaymentToken(token: string): Promise<string | null> {
+  try {
+    const { payload } = await jwtVerify(token, SECRET(), { audience: "eclat-order-payment" });
+    return typeof payload.orderId === "string" && payload.orderId.length > 0
+      ? payload.orderId
+      : null;
+  } catch {
+    return null;
+  }
+}
 export async function verifySessionToken(
   token: string
 ): Promise<SessionUser | null> {
