@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifyOrderPaymentToken } from "@eclat/auth";
 import {
   getOrderById,
   getExistingPaymentIntentId,
@@ -25,10 +26,30 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const paymentToken =
+      typeof body.paymentToken === "string" ? body.paymentToken.trim() : "";
+    const tokenOrderId = paymentToken
+      ? await verifyOrderPaymentToken(paymentToken)
+      : null;
+    if (!tokenOrderId || tokenOrderId !== orderId) {
+      return NextResponse.json(
+        { error: "A valid checkout payment token is required" },
+        { status: 401 }
+      );
+    }
+
     // Ignore any client-supplied amount/currency/status
     const order = await getOrderById(orderId);
     if (!order) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    }
+
+    const paymentMethod = String((order as any).payments?.[0]?.method || "");
+    if (paymentMethod !== "custom_gateway") {
+      return NextResponse.json(
+        { error: "This order is not configured for online card payment" },
+        { status: 409 }
+      );
     }
 
     const status = String((order as any).status || "");
@@ -85,8 +106,9 @@ export async function POST(req: NextRequest) {
     const Stripe = (await import("stripe")).default;
     const stripe = new Stripe(secretKey, { apiVersion: "2024-06-20" });
 
-    // Reuse existing intent when safe
+    // A canceled intent cannot be reused. Use a new stable key for the next attempt.
     const existingId = await getExistingPaymentIntentId(orderId);
+    let createIdempotencyKey = `eclat-order-payment-${orderId}`;
     if (existingId) {
       try {
         const existing = await stripe.paymentIntents.retrieve(existingId);
@@ -94,6 +116,9 @@ export async function POST(req: NextRequest) {
           existing.status === "requires_payment_method" ||
           existing.status === "requires_confirmation" ||
           existing.status === "requires_action";
+        if (existing.status === "canceled") {
+          createIdempotencyKey = `eclat-order-payment-${orderId}-retry-${existing.id}`;
+        }
         const amountOk = existing.amount === amountMinor;
         const currencyOk =
           existing.currency.toLowerCase() === currency;
@@ -123,7 +148,7 @@ export async function POST(req: NextRequest) {
       },
       {
         // A retry after a DB failure must retrieve the same Stripe intent.
-        idempotencyKey: `eclat-order-payment-${orderId}`,
+        idempotencyKey: createIdempotencyKey,
       }
     );
 
