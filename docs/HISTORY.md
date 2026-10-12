@@ -2,6 +2,21 @@
 
 ---
 
+## 2026-10-13 — Phase 3 checkout request validation and CI results
+
+**What**
+- The orders API now rejects malformed JSON bodies and non-object checkout payloads with HTTP 400 instead of falling through to a generic server error.
+- Removed a dead online-payment secret check that could never run after the fail-closed custom_gateway rejection.
+- Updated the existing project plan and phase status ledger with verified CI results.
+
+**Verification**
+- GitHub Actions run 38307515126 succeeded on commit 94858f7c166630d6476e482bc256ef47f22d19be: Prisma validation, CI database schema setup, auth security tests, checkout/payment security tests, storefront build, and admin build all completed successfully.
+- The checkout route validation change was pushed after that successful run and still requires a fresh CI run.
+- Typecheck, mobile manual checkout, full admin fulfillment flow, migration baseline review, lockfile, and real payment provider tests remain open.
+- No production database migration, merge to main, or deployment was performed.
+
+---
+
 ## 2026-10-13 — Give CI builds a disposable database
 
 **What**
