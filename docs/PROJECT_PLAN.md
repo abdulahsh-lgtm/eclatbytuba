@@ -27,6 +27,57 @@ Any agent must follow these phases in order. Do not invent new phases.
 
 ---
 
+## VERIFICATION LEDGER AND CARRY-FORWARD CHECKLIST
+
+This section is the persistent handoff record. Update it in this file instead of creating extra plan documents. A phase is not complete because code or test files exist: mark it complete only when the relevant checks have run and evidence is recorded in HISTORY.md.
+
+### Phase naming rule
+The product phases below are the numbered phases in this plan. Security remediation labels such as "security Phase 1" and "security Phase 2" are separate workstreams and must not be confused with product Phases 1 and 2.
+
+### Current gate: payment security follow-up
+- [x] Restore key checkout/payment data-layer code and add order status transition checks.
+- [x] Add Stripe SDK and auth workspace dependencies used by current routes.
+- [x] Add checkout, payment, order-status, admin API, and auth security test files.
+- [x] Add stable Stripe PaymentIntent idempotency key and fail the request if attachment fails.
+- [x] Move webhook event ledger writes into the payment transaction after validation/state updates.
+- [x] Persist failed payment state on the order and reject invalid payment-record attachment.
+- [ ] Run checkout and payment tests in a clean install.
+- [ ] Add/verify tests for database transaction rollback on invalid amount/currency and duplicate webhook event.
+- [ ] Verify PaymentIntent reuse, attachment failure/retry, and payment-failure-to-success retry against the database layer.
+- [ ] Run typecheck, Prisma schema/migration validation, and production builds for web/admin.
+- [ ] Verify a Stripe test-mode success, failure, duplicate webhook delivery, and mismatched amount/currency.
+- [ ] Resolve the missing pnpm lockfile and ensure clean, reproducible dependency installation.
+- [ ] Review the create-intent endpoint for anonymous order ownership/proof so knowing an order ID alone is not enough to retrieve a client secret.
+- [ ] Confirm no production path enables in-memory/mock payment behavior.
+- [ ] Do not mark security work complete until each applicable checkbox has test output or documented reason/evidence.
+
+### Phase-by-phase carry-forward checks
+Apply these checks to every phase before moving on:
+- [ ] Inspect existing implementation and references before editing. Prefer the correct existing file over new files.
+- [ ] Check for duplicate, placeholder, truncated, dead, or conflicting code and files. Verify references before removal or consolidation.
+- [ ] Preserve unrelated work, current visual tokens, product catalog facts, existing routes, and working features.
+- [ ] Add focused regression tests for each bug/security fix. Do not count test files as a passing test run.
+- [ ] Check input validation, authentication/authorization, rate limits, error handling, secrets, and production fail-closed behavior where applicable.
+- [ ] Check database constraints, migrations, transactions, concurrency, idempotency, and rollback behavior where applicable.
+- [ ] Check loading, empty, error, success, mobile, accessibility, and keyboard states for UI work.
+- [ ] Check API contract compatibility between storefront, admin, and database packages.
+- [ ] Run the actual relevant tests, lint, typecheck, schema validation, and build when the environment supports them. Record blocked checks honestly.
+- [ ] Update this plan's checkbox/status, PHASES_STATUS.md, and HISTORY.md with changed files, evidence, failures, and remaining work.
+- [ ] Review the final diff for accidental duplicates, unrelated edits, generated artifacts, secrets, and user-facing wording.
+- [ ] Never claim verified/pass without captured command output or a successful CI check.
+- [ ] Keep deployment, live migrations, and production credentials last, after all release gates pass.
+
+### Next product phase: Phase 3 — Cart + Checkout + Orders
+- [ ] Audit cart persistence and quantity/variant behavior, including refresh and mobile.
+- [ ] Audit checkout server-authoritative price, shipping (Rs 250), discounts, totals, stock, and idempotency.
+- [ ] Audit COD and local payment options against the actual Pakistan payment plan; do not silently treat Stripe placeholder support as a live local gateway.
+- [ ] Audit duplicate order submission, inventory race conditions, order confirmation email failure, and safe retry behavior.
+- [ ] Audit customer access to order details and ensure private orders are not exposed by guessing an order ID.
+- [ ] Audit admin order listing/status transitions and fulfillment flow.
+- [ ] Add/fix tests, then record actual results before marking Phase 3 complete.
+
+---
+
 ## PHASE 0 — Design Token Lock + Repo Skeleton + Core Docs
 
 **Goal:** Lock visual system + monorepo foundation.
