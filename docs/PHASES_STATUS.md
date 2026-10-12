@@ -23,7 +23,7 @@
 | Checkout request omitted selected variantId | Fixed in working branch; regression test added but not run |
 | Orders API accepted arbitrary payment-method strings | Supported-method allowlist added; server-side enabled-state enforcement waits on persistent settings |
 | Cart localStorage was trusted after JSON parsing | Stored cart shape/quantities now validated; UI regression test pending |
-| PaymentIntent endpoint can be called using an order ID without ownership proof | Open security blocker |
+| PaymentIntent endpoint can be called using an order ID without ownership proof | Signed order-bound token added; route-level security tests still pending |
 | Settings persistence is in-memory rather than durable | Open follow-up for settings phase; do not rely on enable/disable values as durable production configuration |
 
 ## Active security follow-up (separate from product phase numbering)
@@ -31,9 +31,9 @@
 | Workstream | Status | Remaining evidence |
 |------------|--------|--------------------|
 | Security Phase 1: checkout and financial integrity | Implemented fixes present on working branch | Run checkout security tests, concurrency/idempotency checks, typecheck and build |
-| Security Phase 2: payment processing and Stripe webhooks | Retry/transaction fixes present on working branch | Run DB-backed tests, Stripe test-mode success/failure/replay/mismatch cases |
+| Security Phase 2: payment processing and Stripe webhooks | Signed checkout token and failed/canceled retry handling added on working branch | Run auth/payment tests, DB-backed tests, Stripe test-mode success/failure/replay/mismatch cases |
 | Reproducible install | Incomplete | Add/restore the correct pnpm lockfile and confirm clean install |
-| Customer payment endpoint ownership | Review pending | Verify a caller cannot obtain a client secret with only an order ID |
+| Customer payment endpoint ownership | Signed token check added | Verify missing, invalid, expired, and wrong-order tokens fail closed; test custom_gateway flow end to end |
 | Production readiness | Not ready | Do not deploy until all release checks pass |
 
 Do not use a green status as proof of verification. Mark an item verified only when the command output, CI result, or manual test evidence is recorded in HISTORY.md.
