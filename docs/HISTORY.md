@@ -2,6 +2,22 @@
 
 ---
 
+## 2026-10-13 — Payment access proof and retry recovery
+
+**What**
+- Added short-lived signed checkout payment tokens bound to an order ID. The order API returns one only for custom_gateway checkout, and create-intent rejects missing or mismatched tokens.
+- Restricted create-intent to orders whose stored payment method is custom_gateway.
+- Added a new stable Stripe idempotency key for canceled PaymentIntent retries.
+- Added retry attachment logic for failed payment records in both database-backed and in-memory paths.
+- Added source-level tests for token tampering and failed-payment retry attachment.
+
+**Verification**
+- Confirmed the changes and tests are present on the working branch through remote source review.
+- Tests, typecheck, Prisma validation, build, and Stripe sandbox checks have not been run. Payment token route tests and database-backed retry tests remain required.
+- No migration was applied and no deployment was performed.
+
+---
+
 ## 2026-10-13 — Phase 3 cart and checkout audit
 
 **What**
