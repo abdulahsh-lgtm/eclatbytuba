@@ -19,8 +19,6 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    container:
-      image: node:20-bookworm
     services:
       postgres:
         image: postgres:16
@@ -37,7 +35,7 @@ jobs:
           --health-retries 5
     timeout-minutes: 25
     env:
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/eclat_ci
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/eclat_ci
       AUTH_SECRET: ci-only-secret-not-for-production
       NEXTAUTH_SECRET: ci-only-secret-not-for-production
       ADMIN_EMAIL: ci-admin@example.test
