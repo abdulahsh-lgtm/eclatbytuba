@@ -72,6 +72,8 @@ jobs:
           fi
       - name: Apply migrations to disposable CI database
         run: pnpm --filter @eclat/db exec prisma migrate deploy --schema prisma/schema.prisma
+      - name: Generate Prisma client
+        run: pnpm --filter @eclat/db db:generate
       - name: Run auth security tests
         run: pnpm --filter @eclat/auth test:security
       - name: Run checkout and payment security tests
