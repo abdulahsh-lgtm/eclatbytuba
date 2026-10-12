@@ -46,8 +46,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const body = await req.json();
-    const paymentMethod = typeof body.paymentMethod === "string" ? body.paymentMethod : "cod";
+    const body: unknown = await req.json().catch(() => null);
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return NextResponse.json({ error: "Invalid checkout request" }, { status: 400 });
+    }
+    const checkout = body as Record<string, any>;
+    const paymentMethod = typeof checkout.paymentMethod === "string" ? checkout.paymentMethod : "cod";
     const supportedPaymentMethods = new Set([
       "cod",
       "bank_transfer",
@@ -71,49 +75,37 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!body.email || !body.items?.length) {
+    if (!checkout.email || !body.items?.length) {
       return NextResponse.json(
         { error: "email and items are required" },
         { status: 400 }
       );
     }
 
-    // Online payment needs a signing secret before an order is created.
-    if (
-      paymentMethod === "custom_gateway" &&
-      process.env.NODE_ENV === "production" &&
-      !(process.env.NEXTAUTH_SECRET?.trim() || process.env.AUTH_SECRET?.trim())
-    ) {
-      return NextResponse.json(
-        { error: "Online payment is not configured" },
-        { status: 503 }
-      );
-    }
-
     const order = await createOrder({
-      email: body.email,
-      phone: body.phone,
+      email: checkout.email,
+      phone: checkout.phone,
       shippingAddress: {
-        ...(body.shippingAddress || {}),
+        ...(checkout.shippingAddress || {}),
         shippingMethod:
-          body.shippingMethod ||
-          body.shippingAddress?.shippingMethod ||
+          checkout.shippingMethod ||
+          checkout.shippingAddress?.shippingMethod ||
           "standard",
       },
-      items: (body.items as any[]).map((i) => ({
+      items: (checkout.items as any[]).map((i) => ({
         productId: i.productId,
         quantity: i.quantity,
         variantId: i.variantId,
       })),
       paymentMethod,
       shippingMethod:
-        body.shippingMethod || body.shippingAddress?.shippingMethod,
-      idempotencyKey: body.idempotencyKey || body.idempotency_key || null,
+        checkout.shippingMethod || checkout.shippingAddress?.shippingMethod,
+      idempotencyKey: checkout.idempotencyKey || checkout.idempotency_key || null,
     });
 
     try {
       await sendOrderConfirmation({
-        to: body.email,
+        to: checkout.email,
         orderNumber: (order as any).orderNumber,
         total: Number((order as any).total),
         paymentMethod,
