@@ -18,7 +18,6 @@ if (process.env.ALLOW_IN_MEMORY === "1") {
 const suffix = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 const emailPrefix = `checkout_db_${suffix}`;
 const productIds: string[] = [];
-const originalSetting = await prisma.setting.findUnique({ where: { key: "store" } });
 
 async function createTestProduct(inventory: number) {
   const product = await prisma.product.create({
@@ -54,6 +53,7 @@ function orderInput(productId: string, email: string, idempotencyKey: string) {
 }
 
 async function main() {
+  const originalSetting = await prisma.setting.findUnique({ where: { key: "store" } });
   try {
     await updateSettingsPersistent({ payments: { cod: { enabled: false } } });
     const persistedSettings = await getPublicSettingsPersistent();
