@@ -1,5 +1,8 @@
 name: Verify code
 
+permissions:
+  contents: write
+
 concurrency:
   group: verify-${{ github.ref }}
   cancel-in-progress: true
@@ -51,15 +54,30 @@ jobs:
         with:
           node-version: 20
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: |
+          if [ -f pnpm-lock.yaml ]; then
+            pnpm install --frozen-lockfile
+          else
+            pnpm install --no-frozen-lockfile
+          fi
       - name: Validate Prisma schema
         run: pnpm --filter @eclat/db exec prisma validate --schema prisma/schema.prisma
-      - name: Create CI database schema
-        run: pnpm --filter @eclat/db db:push
+      - name: Prepare Prisma baseline for disposable CI database
+        run: |
+          if [ ! -f packages/db/prisma/migrations/0_init/migration.sql ]; then
+            mkdir -p packages/db/prisma/migrations/0_init
+            pnpm --filter @eclat/db exec prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > packages/db/prisma/migrations/0_init/migration.sql
+          fi
+      - name: Apply migrations to disposable CI database
+        run: pnpm --filter @eclat/db exec prisma migrate deploy --schema prisma/schema.prisma
       - name: Run auth security tests
         run: pnpm --filter @eclat/auth test:security
       - name: Run checkout and payment security tests
         run: pnpm --filter @eclat/db test:security:all
+      - name: Test checkout idempotency and inventory concurrency against PostgreSQL
+        run: pnpm --filter @eclat/db test:database
+      - name: Test admin fulfillment API against PostgreSQL
+        run: pnpm --filter @eclat/web test:orders:integration
       - name: Typecheck storefront
         run: pnpm --filter @eclat/web exec tsc --noEmit
       - name: Typecheck admin
@@ -70,3 +88,15 @@ jobs:
         run: pnpm --filter @eclat/web build
       - name: Build admin
         run: pnpm --filter @eclat/admin build
+      - name: Commit generated lockfile and Prisma baseline on the working branch
+        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/fix/phase-1-2-payment-verification'
+        run: |
+          git add pnpm-lock.yaml packages/db/prisma/migrations/0_init/migration.sql
+          if git diff --cached --quiet; then
+            echo "Lockfile and baseline are already committed."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "build: add pnpm lockfile and Prisma baseline"
+          git push origin "HEAD:$GITHUB_REF_NAME"
