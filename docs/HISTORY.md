@@ -2,6 +2,18 @@
 
 ---
 
+## 2026-10-13 — Fix cart add-item type and CI build environment
+
+**What**
+- Corrected the cart context contract: the context generates each cart item's ID, so callers no longer have to supply one.
+- Removed the workflow-wide development NODE_ENV so Next.js builds run in their normal production build mode.
+
+**Verification**
+- GitHub Actions identified the missing cart item ID as a storefront type error.
+- A follow-up CI run is in progress for the fix. No build is marked passing until the run completes.
+
+---
+
 ## 2026-10-13 — Fail closed for unfinished online checkout and add CI
 
 **What**
