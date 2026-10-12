@@ -2,6 +2,24 @@
 
 ---
 
+## 2026-10-12 — Checkout/payment verification and admin API guards
+
+**What**
+- Restored the complete historical database data layer on main and added order-status transition guards.
+- Declared the Stripe SDK dependency used by the existing payment routes.
+- Added checkout, payment, order-status, and admin API security test files and a combined test script.
+- Protected admin settings reads/updates and review moderation/listing routes with the existing admin session helper.
+
+**Why**
+- Recovery review found the remote data layer had been truncated and admin-only settings/review operations were reachable without authentication.
+
+**Verification**
+- Confirmed changed files and commits are present on the remote main branch.
+- Runtime tests, typecheck, Prisma validation, and production build remain unrun in this environment.
+
+---
+
+
 ## 2026-09-28 — SEO 100 checklist: max code pass
 
 **What**
