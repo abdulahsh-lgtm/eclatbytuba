@@ -75,5 +75,8 @@ export {
   getPublicSettings,
   getAdminSettings,
   updateSettings,
+  getPublicSettingsPersistent,
+  getAdminSettingsPersistent,
+  updateSettingsPersistent,
 } from "./settings-store";
 export type { StoreSettings, PaymentMethodId } from "./settings-store";
