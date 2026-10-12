@@ -5,7 +5,7 @@ import {
 } from "@eclat/db";
 
 /**
- * Phase 2 — Stripe webhook handler.
+ * Phase 2: Stripe webhook handler.
  * - Signature verified against raw body
  * - Event processing is idempotent (StripeWebhookEvent ledger + state machine)
  * - Order marked PAID only when amount/currency/order match verified intent
