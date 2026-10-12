@@ -11,7 +11,10 @@
     "db:seed": "tsx src/seed.ts",
     "lint": "echo 'lint db'",
     "test:security": "ALLOW_IN_MEMORY=1 tsx src/checkout.security.test.ts && ALLOW_IN_MEMORY=1 tsx src/payment.phase2.test.ts",
-    "test:phase2": "ALLOW_IN_MEMORY=1 tsx src/payment.phase2.test.ts"
+    "test:phase2": "ALLOW_IN_MEMORY=1 tsx src/payment.phase2.test.ts",
+    "test:order-status": "ALLOW_IN_MEMORY=1 NODE_ENV=development tsx src/order-status.phase3.test.ts",
+    "test:admin-api": "ALLOW_IN_MEMORY=1 NODE_ENV=development tsx src/admin-api.phase3.test.ts",
+    "test:security:all": "ALLOW_IN_MEMORY=1 tsx src/checkout.security.test.ts && ALLOW_IN_MEMORY=1 tsx src/payment.phase2.test.ts && ALLOW_IN_MEMORY=1 NODE_ENV=development tsx src/order-status.phase3.test.ts && ALLOW_IN_MEMORY=1 NODE_ENV=development tsx src/admin-api.phase3.test.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.20.0",
