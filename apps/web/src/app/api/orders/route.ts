@@ -62,6 +62,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Fail closed until the Pakistan payment provider is integrated end to end.
+    // Do not create an order that tells the customer to pay through a dead flow.
+    if (paymentMethod === "custom_gateway") {
+      return NextResponse.json(
+        { error: "Online payment is temporarily unavailable. Please choose another method." },
+        { status: 503 }
+      );
+    }
+
     if (!body.email || !body.items?.length) {
       return NextResponse.json(
         { error: "email and items are required" },
