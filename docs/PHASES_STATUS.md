@@ -25,6 +25,7 @@
 | Cart localStorage was trusted after JSON parsing | Stored cart shape/quantities now validated; UI regression test pending |
 | PaymentIntent endpoint can be called using an order ID without ownership proof | Signed order-bound token added; route-level security tests still pending |
 | Settings persistence is in-memory rather than durable | Open follow-up for settings phase; do not rely on enable/disable values as durable production configuration |
+| Actual online payment integration | Not complete; checkout does not call create-intent and custom_gateway is only a placeholder |
 
 ## Active security follow-up (separate from product phase numbering)
 
