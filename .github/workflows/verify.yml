@@ -64,8 +64,11 @@ jobs:
         run: pnpm --filter @eclat/db exec prisma validate --schema prisma/schema.prisma
       - name: Prepare Prisma baseline for disposable CI database
         run: |
+          mkdir -p packages/db/prisma/migrations/0_init
+          if [ ! -f packages/db/prisma/migrations/migration_lock.toml ]; then
+            printf 'provider = "postgresql"\n' > packages/db/prisma/migrations/migration_lock.toml
+          fi
           if [ ! -f packages/db/prisma/migrations/0_init/migration.sql ]; then
-            mkdir -p packages/db/prisma/migrations/0_init
             pnpm --filter @eclat/db exec prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script > packages/db/prisma/migrations/0_init/migration.sql
           fi
       - name: Apply migrations to disposable CI database
@@ -91,7 +94,7 @@ jobs:
       - name: Commit generated lockfile and Prisma baseline on the working branch
         if: success() && github.event_name == 'push' && github.ref == 'refs/heads/fix/phase-1-2-payment-verification'
         run: |
-          git add pnpm-lock.yaml packages/db/prisma/migrations/0_init/migration.sql
+          git add pnpm-lock.yaml packages/db/prisma/migrations/migration_lock.toml packages/db/prisma/migrations/0_init/migration.sql
           if git diff --cached --quiet; then
             echo "Lockfile and baseline are already committed."
             exit 0
