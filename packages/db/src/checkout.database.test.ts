@@ -17,7 +17,6 @@ if (process.env.ALLOW_IN_MEMORY === "1") {
 const suffix = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 const emailPrefix = `checkout_db_${suffix}`;
 const productIds: string[] = [];
-const orderEmails: string[] = [];
 
 async function createTestProduct(inventory: number) {
   const product = await prisma.product.create({
@@ -56,7 +55,6 @@ async function main() {
   try {
     const idempotentProduct = await createTestProduct(5);
     const idempotentEmail = `${emailPrefix}_same@example.test`;
-    orderEmails.push(idempotentEmail);
     const idempotencyKey = `same_${suffix}`;
     const [first, second] = await Promise.all([
       createOrder(orderInput(idempotentProduct.id, idempotentEmail, idempotencyKey)),
@@ -74,7 +72,6 @@ async function main() {
     const stockProduct = await createTestProduct(1);
     const raceEmailA = `${emailPrefix}_race_a@example.test`;
     const raceEmailB = `${emailPrefix}_race_b@example.test`;
-    orderEmails.push(raceEmailA, raceEmailB);
     const outcomes = await Promise.allSettled([
       createOrder(orderInput(stockProduct.id, raceEmailA, `race_a_${suffix}`)),
       createOrder(orderInput(stockProduct.id, raceEmailB, `race_b_${suffix}`)),
