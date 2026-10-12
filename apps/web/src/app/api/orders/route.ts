@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getOrders, createOrder, CheckoutError } from "@eclat/db";
+import { getOrders, createOrder, CheckoutError, getPublicSettings } from "@eclat/db";
 import { requireAdminSession } from "@eclat/auth";
 import { rateLimit, RATE_LIMITS, clientKey } from "@eclat/config";
 import { sendOrderConfirmation } from "@eclat/emails";
-import { getPublicSettings } from "@eclat/db";
 
 /** List all orders - admin session required. */
 export async function GET(req: NextRequest) {
