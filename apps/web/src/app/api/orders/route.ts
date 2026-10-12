@@ -70,12 +70,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Fail closed until the Pakistan payment provider is integrated end to end.
-    // Do not create an order that tells the customer to pay through a dead flow.
-    if (paymentMethod === "custom_gateway") {
+    // Only COD is currently wired end to end. Manual transfer and wallet
+    // options must stay disabled until their instructions/provider callbacks
+    // are configured and verified. Never create an order for a dead payment flow.
+    if (paymentMethod !== "cod") {
       return NextResponse.json(
         {
-          error: "Online payment is temporarily unavailable. Please choose another method.",
+          error: "This payment method is not available yet. Please choose Cash on Delivery.",
         },
         { status: 503 }
       );
