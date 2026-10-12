@@ -111,21 +111,25 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const intent = await stripe.paymentIntents.create({
-      amount: amountMinor,
-      currency,
-      metadata: {
-        orderId: String((order as any).id),
-        orderNumber: String((order as any).orderNumber || ""),
+    const intent = await stripe.paymentIntents.create(
+      {
+        amount: amountMinor,
+        currency,
+        metadata: {
+          orderId: String((order as any).id),
+          orderNumber: String((order as any).orderNumber || ""),
+        },
+        automatic_payment_methods: { enabled: true },
       },
-      automatic_payment_methods: { enabled: true },
-    });
+      {
+        // A retry after a DB failure must retrieve the same Stripe intent.
+        idempotencyKey: `eclat-order-payment-${orderId}`,
+      }
+    );
 
-    try {
-      await attachPaymentIntent(orderId, intent.id);
-    } catch (attachErr) {
-      console.warn("attachPaymentIntent skipped:", attachErr);
-    }
+    // Do not return a client secret unless the intent is durably linked to the order.
+    // If this write fails, a retry uses the same Stripe idempotency key and can attach it.
+    await attachPaymentIntent(orderId, intent.id);
 
     return NextResponse.json({
       clientSecret: intent.client_secret,
