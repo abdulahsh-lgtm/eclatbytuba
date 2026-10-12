@@ -70,6 +70,7 @@ export default function CheckoutPage() {
   const [orderNumber, setOrderNumber] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [idempotencyKey, setIdempotencyKey] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [shippingMethod, setShippingMethod] = useState("standard");
   const [enabledKeys, setEnabledKeys] = useState<string[]>(["cod"]);
@@ -86,6 +87,15 @@ export default function CheckoutPage() {
     city: "",
     postalCode: "",
   });
+
+  useEffect(() => {
+    try {
+      const savedKey = sessionStorage.getItem("eclat_checkout_idempotency_key");
+      if (savedKey) setIdempotencyKey(savedKey);
+    } catch {
+      // Storage may be unavailable; a fresh key is generated on submit.
+    }
+  }, []);
 
   useEffect(() => {
     fetch("/api/settings")
@@ -170,10 +180,23 @@ export default function CheckoutPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     setLoading(true);
     setError("");
 
     try {
+      const requestKey =
+        idempotencyKey ||
+        (typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : `checkout_${Date.now()}_${Math.random().toString(36).slice(2)}`);
+      setIdempotencyKey(requestKey);
+      try {
+        sessionStorage.setItem("eclat_checkout_idempotency_key", requestKey);
+      } catch {
+        // The key still protects retries while this checkout page remains open.
+      }
+
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -183,6 +206,7 @@ export default function CheckoutPage() {
           paymentMethod,
           shippingMethod,
           shippingCost,
+          idempotencyKey: requestKey,
           shippingAddress: {
             fullName: form.fullName,
             line1: form.address,
@@ -193,6 +217,7 @@ export default function CheckoutPage() {
           },
           items: items.map((i) => ({
             productId: i.productId,
+            variantId: i.variantId,
             name: i.name,
             price: i.price,
             quantity: i.quantity,
@@ -213,6 +238,12 @@ export default function CheckoutPage() {
 
       setOrderNumber(data.order.orderNumber);
       clearCart();
+      try {
+        sessionStorage.removeItem("eclat_checkout_idempotency_key");
+      } catch {
+        // The placed state prevents a second submission in this page.
+      }
+      setIdempotencyKey("");
       setPlaced(true);
     } catch (err: any) {
       setError(err.message || "Something went wrong");
