@@ -28,6 +28,7 @@
 | Actual online payment integration | Not complete; checkout does not call create-intent and custom_gateway is only a placeholder |
 | Unfinished online payment option | Hidden in checkout and rejected by orders API until provider integration is complete | 
 | Automated verification | Latest run 38307515126 succeeded: Prisma validation, auth/checkout/payment tests, storefront build, admin build |
+| Admin fulfillment API validation | Request validation and invalid-transition 400 responses added; expanded CI with three TypeScript checks, fresh run pending |
 
 ## Active security follow-up (separate from product phase numbering)
 
