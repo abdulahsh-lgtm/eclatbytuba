@@ -208,22 +208,22 @@ function projectPublicSettings(settings: StoreSettings) {
     payments: {
       cod: { enabled: settings.payments.cod.enabled },
       bank: {
-        enabled: settings.payments.bank.enabled,
+        enabled: false,
         accountName: settings.payments.bank.accountName,
         bankName: settings.payments.bank.bankName,
         accountNumber: settings.payments.bank.accountNumber
           ? `****${settings.payments.bank.accountNumber.slice(-4)}`
           : "",
       },
-      jazzcash: { enabled: settings.payments.jazzcash.enabled },
-      easypaisa: { enabled: settings.payments.easypaisa.enabled },
+      jazzcash: { enabled: false },
+      easypaisa: { enabled: false },
       customGateway: {
-        enabled: settings.payments.customGateway.enabled,
+        enabled: false,
         providerName: settings.payments.customGateway.providerName || "Online payment",
         instructions: settings.payments.customGateway.instructions,
       },
       stripe: {
-        enabled: settings.payments.stripe.enabled,
+        enabled: false,
         publishableKey: settings.payments.stripe.publishableKey,
       },
     },
@@ -233,6 +233,31 @@ function projectPublicSettings(settings: StoreSettings) {
       gaId: settings.pixels.gaId || process.env.NEXT_PUBLIC_GA_ID || "",
     },
   };
+}
+
+function disableUnintegratedPaymentMethods(settings: StoreSettings): StoreSettings {
+  return {
+    ...settings,
+    payments: {
+      ...settings.payments,
+      bank: { ...settings.payments.bank, enabled: false },
+      jazzcash: { ...settings.payments.jazzcash, enabled: false },
+      easypaisa: { ...settings.payments.easypaisa, enabled: false },
+      customGateway: { ...settings.payments.customGateway, enabled: false },
+      stripe: { ...settings.payments.stripe, enabled: false },
+    },
+  };
+}
+
+function rejectUnintegratedPaymentMethods(partial: Partial<StoreSettings>): void {
+  const payments = partial.payments;
+  if (!payments) return;
+  const unintegrated = ["bank", "jazzcash", "easypaisa", "customGateway", "stripe"] as const;
+  for (const method of unintegrated) {
+    if (payments[method]?.enabled === true) {
+      throw new Error(`${method} payments cannot be enabled until the provider flow is integrated`);
+    }
+  }
 }
 
 function usePersistentSettings(): boolean {
@@ -248,7 +273,9 @@ async function loadPersistentSettings(): Promise<StoreSettings> {
   const { prisma } = await import("./index");
   const row = await prisma.setting.findUnique({ where: { key: "store" } });
   if (!row) return structuredClone(DEFAULTS);
-  return mergeSettings(structuredClone(DEFAULTS), validateSettingsPatch(row.value));
+  return disableUnintegratedPaymentMethods(
+    mergeSettings(structuredClone(DEFAULTS), validateSettingsPatch(row.value))
+  );
 }
 
 export function getSettings(): StoreSettings {
@@ -266,7 +293,9 @@ export function getAdminSettings(): StoreSettings {
 }
 
 export function updateSettings(partial: Partial<StoreSettings>): StoreSettings {
-  store = mergeSettings(store, validateSettingsPatch(partial));
+  const validated = validateSettingsPatch(partial);
+  rejectUnintegratedPaymentMethods(validated);
+  store = mergeSettings(store, validated);
   return getSettings();
 }
 
@@ -281,7 +310,10 @@ export async function getAdminSettingsPersistent(): Promise<StoreSettings> {
 
 export async function updateSettingsPersistent(value: unknown): Promise<StoreSettings> {
   const partial = validateSettingsPatch(value);
-  const updated = mergeSettings(await loadPersistentSettings(), partial);
+  rejectUnintegratedPaymentMethods(partial);
+  const updated = disableUnintegratedPaymentMethods(
+    mergeSettings(await loadPersistentSettings(), partial)
+  );
   if (usePersistentSettings()) {
     const { prisma } = await import("./index");
     await prisma.setting.upsert({
