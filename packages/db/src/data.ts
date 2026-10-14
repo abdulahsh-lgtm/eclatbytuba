@@ -550,39 +550,102 @@ export async function getExistingPaymentIntentId(orderId: string): Promise<strin
 export async function updateOrderStatus(id: string, status: string, opts?: { notes?: string; trackingNumber?: string }) {
   if (useDb()) {
     const { prisma } = await import("./index");
-    const existing = await prisma.order.findUnique({ where: { id } });
-    if (!existing) return null;
-    const transition = assertOrderStatusTransition(String(existing.status), status);
-    if (!transition.ok) throw new Error(transition.reason);
-    const parsed = parseNotesField(existing.notes);
-    const nextNotes =
-      opts?.notes !== undefined || opts?.trackingNumber !== undefined
-        ? composeNotes(opts?.notes !== undefined ? opts.notes : parsed.notes, opts?.trackingNumber !== undefined ? opts.trackingNumber : parsed.trackingNumber)
-        : existing.notes;
-    const updated = await prisma.order.update({
-      where: { id },
-      data: {
-        status: status as any,
-        notes: nextNotes,
-        ...(status === "SHIPPED" ? { shippedAt: new Date() } : {}),
-        ...(status === "DELIVERED" ? { deliveredAt: new Date() } : {}),
-      },
-      include: { items: true, payments: true },
+    const updated = await prisma.$transaction(async (tx: any) => {
+      const existing = await tx.order.findUnique({
+        where: { id },
+        include: { items: true, payments: true },
+      });
+      if (!existing) return null;
+
+      const transition = assertOrderStatusTransition(String(existing.status), status);
+      if (!transition.ok) throw new Error(transition.reason);
+
+      const parsed = parseNotesField(existing.notes);
+      const nextNotes =
+        opts?.notes !== undefined || opts?.trackingNumber !== undefined
+          ? composeNotes(
+              opts?.notes !== undefined ? opts.notes : parsed.notes,
+              opts?.trackingNumber !== undefined ? opts.trackingNumber : parsed.trackingNumber
+            )
+          : existing.notes;
+
+      // Only the transaction that wins this conditional status update may restore stock.
+      // A repeated or concurrent cancellation therefore cannot increment inventory twice.
+      const changed = await tx.order.updateMany({
+        where: { id, status: existing.status },
+        data: {
+          status: status as any,
+          notes: nextNotes,
+          ...(status === "SHIPPED" ? { shippedAt: new Date() } : {}),
+          ...(status === "DELIVERED" ? { deliveredAt: new Date() } : {}),
+        },
+      });
+      if (changed.count !== 1) {
+        const latest = await tx.order.findUnique({
+          where: { id },
+          include: { items: true, payments: true },
+        });
+        if (!latest) return null;
+        if (String(latest.status) === status) return latest;
+        throw new Error("Order status changed concurrently; retry the operation.");
+      }
+
+      if (status === "CANCELLED") {
+        // Never mark a payment REFUNDED here. A successful provider refund must be
+        // confirmed separately; paid cancellations remain visibly PAID until then.
+        for (const item of existing.items) {
+          const product = await tx.product.findUnique({
+            where: { id: item.productId },
+            select: { trackInventory: true },
+          });
+          if (!product?.trackInventory) continue;
+
+          if (item.variantId) {
+            await tx.productVariant.update({
+              where: { id: item.variantId },
+              data: { inventory: { increment: item.quantity } },
+            });
+          } else {
+            await tx.product.update({
+              where: { id: item.productId },
+              data: { inventory: { increment: item.quantity } },
+            });
+          }
+        }
+      }
+
+      return tx.order.findUnique({
+        where: { id },
+        include: { items: true, payments: true },
+      });
     });
+    if (!updated) return null;
     const out = parseNotesField(updated.notes);
     return { ...updated, notes: out.notes, trackingNumber: out.trackingNumber };
   }
+
   ensureMemSeed();
   const order = mem.orders.find((o) => o.id === id);
   if (!order) return null;
   const transition = assertOrderStatusTransition(String(order.status), status);
   if (!transition.ok) throw new Error(transition.reason);
+
+  if (status === "CANCELLED" && order.status !== "CANCELLED") {
+    // In-memory mode mirrors the one-time reservation release used by the database path.
+    for (const item of order.items || []) {
+      const product = mem.products.find((p: any) => p.id === item.productId);
+      if (!product || product.trackInventory === false) continue;
+      product.inventory += Number(item.quantity);
+    }
+    // Payment status is intentionally unchanged. Mark REFUNDED only after the
+    // payment provider confirms an actual refund.
+  }
+
   order.status = status;
   if (opts?.notes !== undefined) order.notes = opts.notes;
   if (opts?.trackingNumber !== undefined) order.trackingNumber = opts.trackingNumber;
   return order;
 }
-
 export async function getProductReviews(productId: string) {
   if (useDb()) {
     const { prisma } = await import("./index");
