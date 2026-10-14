@@ -7,7 +7,7 @@
     "build": "cd ../../packages/db && npx prisma generate && cd ../../apps/web && next build",
     "start": "next start",
     "lint": "next lint",
-    "test:orders:integration": "tsx 'src/app/api/orders/[id]/route.phase3.test.ts'"
+    "test:orders:integration": "pnpm --filter @eclat/db exec tsx ../../apps/web/src/app/api/orders/[id]/route.phase3.test.ts"
   },
   "dependencies": {
     "@eclat/config": "workspace:*",
