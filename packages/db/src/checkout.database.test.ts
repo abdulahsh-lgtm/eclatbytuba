@@ -137,6 +137,32 @@ async function main() {
     const afterRepeat = await prisma.product.findUniqueOrThrow({ where: { id: cancelProduct.id } });
     assert.equal(afterRepeat.inventory, 7, "repeated cancellation does not restore stock twice");
     console.log("PASS - concurrent and repeated order cancellation restores inventory exactly once");
+
+    const paidCancelProduct = await createTestProduct(3);
+    const paidCancelOrder = await createOrder(orderInput(
+      paidCancelProduct.id,
+      `${emailPrefix}_paid_cancel@example.test`,
+      `paid_cancel_${suffix}`
+    ));
+    await prisma.order.update({
+      where: { id: paidCancelOrder.id },
+      data: { paymentStatus: "PAID", paidAt: new Date() },
+    });
+    await prisma.payment.updateMany({
+      where: { orderId: paidCancelOrder.id },
+      data: { status: "PAID" },
+    });
+    await updateOrderStatus(paidCancelOrder.id, "CANCELLED");
+    const paidCancelled = await prisma.order.findUniqueOrThrow({
+      where: { id: paidCancelOrder.id },
+      include: { payments: true },
+    });
+    assert.equal(paidCancelled.status, "CANCELLED");
+    assert.equal(paidCancelled.paymentStatus, "PAID", "cancellation must not claim a refund happened");
+    assert.equal(paidCancelled.payments[0]?.status, "PAID", "provider refund confirmation remains a separate operation");
+    const paidRestoredProduct = await prisma.product.findUniqueOrThrow({ where: { id: paidCancelProduct.id } });
+    assert.equal(paidRestoredProduct.inventory, 3, "paid cancellation restores reserved inventory exactly once");
+    console.log("PASS - paid cancellation restores stock without falsely marking payment refunded");
   } finally {
     await prisma.order.deleteMany({ where: { email: { startsWith: emailPrefix } } });
     if (productIds.length) {
