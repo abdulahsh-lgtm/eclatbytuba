@@ -557,7 +557,7 @@ export async function updateOrderStatus(id: string, status: string, opts?: { not
       });
       if (!existing) return null;
 
-      if (String(existing.status) === status) return existing;
+      if (status === "CANCELLED" && String(existing.status) === "CANCELLED") return existing;
 
       const transition = assertOrderStatusTransition(String(existing.status), status);
       if (!transition.ok) throw new Error(transition.reason);
