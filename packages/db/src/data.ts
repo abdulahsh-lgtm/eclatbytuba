@@ -557,11 +557,6 @@ export async function updateOrderStatus(id: string, status: string, opts?: { not
       });
       if (!existing) return null;
 
-      if (status === "CANCELLED" && String(existing.status) === "CANCELLED") return existing;
-
-      const transition = assertOrderStatusTransition(String(existing.status), status);
-      if (!transition.ok) throw new Error(transition.reason);
-
       const parsed = parseNotesField(existing.notes);
       const nextNotes =
         opts?.notes !== undefined || opts?.trackingNumber !== undefined
@@ -570,6 +565,18 @@ export async function updateOrderStatus(id: string, status: string, opts?: { not
               opts?.trackingNumber !== undefined ? opts.trackingNumber : parsed.trackingNumber
             )
           : existing.notes;
+
+      if (status === "CANCELLED" && String(existing.status) === "CANCELLED") {
+        if (nextNotes === existing.notes) return existing;
+        return tx.order.update({
+          where: { id },
+          data: { notes: nextNotes },
+          include: { items: true, payments: true },
+        });
+      }
+
+      const transition = assertOrderStatusTransition(String(existing.status), status);
+      if (!transition.ok) throw new Error(transition.reason);
 
       // Only the transaction that wins this conditional status update may restore stock.
       // A repeated or concurrent cancellation therefore cannot increment inventory twice.
