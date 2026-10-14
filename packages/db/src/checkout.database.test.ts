@@ -107,6 +107,36 @@ async function main() {
     });
     assert.equal(raceOrders, 1, "only the successful reservation creates an order");
     console.log("PASS - PostgreSQL concurrent inventory reservation prevents overselling");
+
+    const cancelProduct = await createTestProduct(7);
+    const cancelOrder = await createOrder(orderInput(
+      cancelProduct.id,
+      `${emailPrefix}_cancel@example.test`,
+      `cancel_${suffix}`
+    ));
+    const reservedProduct = await prisma.product.findUniqueOrThrow({ where: { id: cancelProduct.id } });
+    assert.equal(reservedProduct.inventory, 6, "checkout reserves one unit before cancellation");
+
+    const { updateOrderStatus } = await import("./data");
+    const [cancelA, cancelB] = await Promise.all([
+      updateOrderStatus(cancelOrder.id, "CANCELLED"),
+      updateOrderStatus(cancelOrder.id, "CANCELLED"),
+    ]);
+    assert.equal(cancelA?.status, "CANCELLED");
+    assert.equal(cancelB?.status, "CANCELLED");
+    const restoredProduct = await prisma.product.findUniqueOrThrow({ where: { id: cancelProduct.id } });
+    assert.equal(restoredProduct.inventory, 7, "concurrent cancellation restores reserved stock exactly once");
+
+    const cancelledOrder = await prisma.order.findUniqueOrThrow({
+      where: { id: cancelOrder.id },
+      include: { payments: true },
+    });
+    assert.equal(cancelledOrder.paymentStatus, "PENDING", "cancellation does not falsely mark payment refunded");
+    assert.equal(cancelledOrder.payments[0]?.status, "PENDING", "payment status remains separate from order cancellation");
+    await updateOrderStatus(cancelOrder.id, "CANCELLED");
+    const afterRepeat = await prisma.product.findUniqueOrThrow({ where: { id: cancelProduct.id } });
+    assert.equal(afterRepeat.inventory, 7, "repeated cancellation does not restore stock twice");
+    console.log("PASS - concurrent and repeated order cancellation restores inventory exactly once");
   } finally {
     await prisma.order.deleteMany({ where: { email: { startsWith: emailPrefix } } });
     if (productIds.length) {
