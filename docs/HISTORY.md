@@ -2,6 +2,20 @@
 
 ---
 
+## 2026-10-14 — Cancellation inventory regression tests and CI runner fix
+
+**What**
+- Added PostgreSQL-backed regression coverage for concurrent and repeated order cancellation, stock restoration, and paid orders whose payment must remain PAID until a provider refund is confirmed.
+- Updated the existing storefront integration-test script to run through the database workspace's installed `tsx` dependency. The previous script failed in CI because `tsx` was not installed in the storefront workspace.
+
+**Verification**
+- GitHub Actions run 38641693577 showed the new cancellation regression cases passing against disposable PostgreSQL.
+- That run failed later, before the admin fulfillment integration test could execute, because the storefront script could not find `tsx`.
+- The runner command fix is pushed for a fresh CI run. Do not mark the overall workflow verified until that run passes.
+- No production database migration, merge to main, or deployment was performed.
+
+---
+
 ## 2026-10-13 — Order update validation and CI typechecks
 
 **What**
